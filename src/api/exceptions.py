@@ -24,22 +24,23 @@ class ServerError(Exception):
 
 
 # --- Handlers ---
-async def user_not_found_handler(request: Request, exc: UserNotFoundError):
+async def user_not_found_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={"message": "User not found"},
     )
 
 
-async def duplicate_email_handler(request: Request, exc: DuplicateEmailError):
+async def duplicate_email_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={"message": "Email already exists"},
     )
 
 
-async def server_error_handler(request: Request, exc: ServerError):
+async def server_error_handler(request: Request, exc: Exception):
+    message = getattr(exc, "message", "Internal server error")
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"message": exc.message},
+        content={"message": message},
     )

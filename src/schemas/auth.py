@@ -1,5 +1,4 @@
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
-from src.db.models import UserRole
 
 
 class UserSchema(BaseModel):
@@ -7,7 +6,6 @@ class UserSchema(BaseModel):
     name: str
     surname: str
     email: str
-    role: UserRole
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -17,7 +15,6 @@ class UserCreate(BaseModel):
     surname: str = Field(..., min_length=2, max_length=50)
     email: EmailStr
     password: str = Field(..., min_length=6, max_length=100)
-    role: UserRole = Field(UserRole.USER, description="User role")
 
 
 class Token(BaseModel):

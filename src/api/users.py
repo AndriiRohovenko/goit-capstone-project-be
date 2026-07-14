@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.schemas.users import UserUploadAvatarResponceSchema
 from src.schemas.auth import UserSchema
 from src.db.models import User
-from src.services.auth import get_current_user, get_current_admin_user
+from src.services.auth import get_current_user
 from src.services.users import UserService
 from src.repository.users import UserRepository
 from src.conf.limiter import limiter
@@ -66,7 +66,7 @@ async def me(request: Request, user: UserSchema = Depends(get_current_user)):
 )
 async def update_user_avatar(
     file: UploadFile = File(),
-    user: User = Depends(get_current_admin_user),
+    user: User = Depends(get_current_user),
     service: UserService = Depends(user_service),
 ):
     """

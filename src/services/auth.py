@@ -14,8 +14,7 @@ from src.repository.users import UserRepository
 from src.schemas.auth import UserSchema
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.db.models import User, UserRole
-
+from src.db.models import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
@@ -57,9 +56,3 @@ async def get_current_user(
     if user_db is None:
         raise credentials_exception
     return UserSchema.model_validate(user_db)
-
-
-def get_current_admin_user(current_user: User = Depends(get_current_user)):
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Only for admin users")
-    return current_user

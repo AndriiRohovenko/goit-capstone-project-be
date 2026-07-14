@@ -5,10 +5,11 @@ Sets up the FastAPI app, middleware, routes, and exception handlers.
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from typing import Callable, cast
+from starlette.responses import Response
 from src.api.users import router as users_router
 from src.api.utils import router as utils_router
 from src.api.auth import router as auth_router
-from src.api.contacts import router as contacts_router
 import time
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.middleware import SlowAPIMiddleware
@@ -24,7 +25,6 @@ from src.api.exceptions import (
     ServerError,
     server_error_handler,
 )
-
 
 app = FastAPI()
 app.state.limiter = limiter
@@ -55,10 +55,14 @@ def read_root():
 app.add_exception_handler(UserNotFoundError, user_not_found_handler)
 app.add_exception_handler(DuplicateEmailError, duplicate_email_handler)
 app.add_exception_handler(ServerError, server_error_handler)
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+RateLimitExceptionHandler = Callable[[Request, Exception], Response]
+app.add_exception_handler(
+    RateLimitExceeded,
+    cast(RateLimitExceptionHandler, _rate_limit_exceeded_handler),
+)
 
 
 app.include_router(users_router, prefix="/api")
 app.include_router(utils_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
-app.include_router(contacts_router, prefix="/api")
