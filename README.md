@@ -88,12 +88,14 @@ poetry install
 ```
 
 2. Run PostgreSQL database locally or in docker.
-3. Set up the .env.dev file.
-   4.Start the development server (with auto-reload):
+3. Create a `.env.dev` file for local development and override the database host to `localhost` if Postgres is running on your machine.
+4. Start the development server with auto-reload:
 
 ```
 poetry run dev
 ```
+
+`poetry run dev` now prefers `.env.dev` when it exists, so you can keep Docker settings in `.env` and local settings in `.env.dev`.
 
 📬 Email Verification
 The project uses FastAPI-Mail for sending email verification links.

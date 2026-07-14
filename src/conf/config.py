@@ -1,4 +1,8 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+ENV_FILE = ".env.dev" if Path(".env.dev").is_file() else ".env"
 
 
 class BaseConfig(BaseSettings):
@@ -31,7 +35,9 @@ class BaseConfig(BaseSettings):
     REDIS_PASSWORD: str
 
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", case_sensitive=True
+        env_file=ENV_FILE,
+        env_file_encoding="utf-8",
+        case_sensitive=True,
     )
 
     def db_url(self) -> str:
