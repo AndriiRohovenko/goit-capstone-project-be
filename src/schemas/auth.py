@@ -1,8 +1,9 @@
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
+from uuid import UUID
 
 
 class UserSchema(BaseModel):
-    id: int
+    id: UUID
     name: str
     surname: str
     email: str

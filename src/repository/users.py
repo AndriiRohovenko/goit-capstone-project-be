@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from uuid import UUID
 from src.db.models import User
 from src.schemas.auth import UserCreate
 from src.api.utils import hash_password
@@ -44,11 +45,11 @@ class UserRepository:
         result = await self.db.execute(select(User).offset(skip).limit(limit))
         return result.scalars().all()
 
-    async def get_by_id(self, user_id: int):
+    async def get_by_id(self, user_id: UUID):
         """
         Retrieve a user by their ID.
         Args:
-            user_id (int): The ID of the user to retrieve.
+            user_id (UUID): The ID of the user to retrieve.
 
         Returns:
             User | None: The user if found, otherwise None.
