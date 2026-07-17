@@ -1,17 +1,12 @@
-from src.repository.users import UserRepository
-from src.db.models import User
-from src.api.exceptions import (
-    UserNotFoundError,
-    DuplicateEmailError,
-    ServerError,
-)
-from src.schemas.auth import UserCreate
-
-from libgravatar import Gravatar
 from jose import jwt
-from src.services.utils import Hash
+from libgravatar import Gravatar
 
 from src.conf.config import config
+from src.db.models import User
+from src.exceptions import DuplicateEmailError, ServerError, UserNotFoundError
+from src.repository.users import UserRepository
+from src.schemas.auth import UserCreate
+from src.services.utils import Hash
 
 SECRET_KEY = config.JWT_SECRET
 ALGORITHM = config.JWT_ALGORITHM
@@ -35,26 +30,30 @@ class UserService:
         try:
             return await self.repo.update(user, {"refresh_token": refresh_token})
         except Exception as e:
-            raise ServerError(str(e))
+            raise ServerError(str(e)) from e
 
     async def get_user_by_refresh_token(self, refresh_token: str):
-        result = await self.repo.get_user_by_refresh_token(refresh_token)
-        return result
+        return await self.repo.get_user_by_refresh_token(refresh_token)
 
     async def get_user_by_email_verification_token(self, token: str):
         email = jwt.decode(token, key=SECRET_KEY, algorithms=[ALGORITHM]).get("sub")
-        result = await self.repo.get_by_email(email)
-        return result
+        return await self.repo.get_by_email(email)
 
     async def create_user(self, data: UserCreate):
         if await self.repo.get_by_email(data.email):
             raise DuplicateEmailError
         try:
-            g = Gravatar(data.email)
-            avatar = g.get_image()
-            return await self.repo.create(data, avatar=avatar)
+            avatar = Gravatar(data.email).get_image()
+            hashed_password = self.hash.get_password_hash(data.password)
+            return await self.repo.create(
+                data,
+                hashed_password=hashed_password,
+                avatar=avatar,
+            )
+        except DuplicateEmailError:
+            raise
         except Exception as e:
-            raise ServerError(str(e))
+            raise ServerError(str(e)) from e
 
     async def update_user(self, user: User, data):
         existing = await self.repo.get_by_id(user.id)
@@ -65,7 +64,7 @@ class UserService:
         try:
             return await self.repo.update(existing, data.dict())
         except Exception as e:
-            raise ServerError(str(e))
+            raise ServerError(str(e)) from e
 
     async def delete_user(self, user: User):
         existing = await self.repo.get_by_id(user.id)
@@ -74,13 +73,13 @@ class UserService:
         try:
             await self.repo.delete(existing)
         except Exception as e:
-            raise ServerError(str(e))
+            raise ServerError(str(e)) from e
 
     async def get_user_by_email(self, email: str):
         try:
             return await self.repo.get_by_email(email)
         except Exception as e:
-            raise ServerError(str(e))
+            raise ServerError(str(e)) from e
 
     async def verify_email(self, user: User):
         existing = await self.repo.get_by_id(user.id)
@@ -89,7 +88,7 @@ class UserService:
         try:
             return await self.repo.confirm_email(existing)
         except Exception as e:
-            raise ServerError(str(e))
+            raise ServerError(str(e)) from e
 
     async def update_avatar_url(self, email: str, url: str):
         return await self.repo.update_avatar_url(email, url)
@@ -101,4 +100,4 @@ class UserService:
                 user, {"hashed_password": hashed_new_password}
             )
         except Exception as e:
-            raise ServerError(str(e))
+            raise ServerError(str(e)) from e

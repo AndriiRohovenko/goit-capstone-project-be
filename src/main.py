@@ -3,28 +3,38 @@ Main application file for the FastAPI project.
 Sets up the FastAPI app, middleware, routes, and exception handlers.
 """
 
+from typing import Callable, cast
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Callable, cast
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from starlette.responses import Response
+import time
+
+from src.api.auth import router as auth_router
+from src.api.exceptions import (
+    DuplicateEmailError,
+    EmailAlreadyVerifiedError,
+    EmailNotVerifiedError,
+    IncorrectPasswordError,
+    InvalidCredentialsError,
+    InvalidRefreshTokenError,
+    ServerError,
+    UserNotFoundError,
+    duplicate_email_handler,
+    email_already_verified_handler,
+    email_not_verified_handler,
+    incorrect_password_handler,
+    invalid_credentials_handler,
+    invalid_refresh_token_handler,
+    server_error_handler,
+    user_not_found_handler,
+)
 from src.api.users import router as users_router
 from src.api.utils import router as utils_router
-from src.api.auth import router as auth_router
-import time
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.middleware import SlowAPIMiddleware
-from slowapi.errors import RateLimitExceeded
 from src.conf.limiter import limiter
-
-
-from src.api.exceptions import (
-    UserNotFoundError,
-    DuplicateEmailError,
-    user_not_found_handler,
-    duplicate_email_handler,
-    ServerError,
-    server_error_handler,
-)
 
 app = FastAPI()
 app.state.limiter = limiter
@@ -55,13 +65,17 @@ def read_root():
 app.add_exception_handler(UserNotFoundError, user_not_found_handler)
 app.add_exception_handler(DuplicateEmailError, duplicate_email_handler)
 app.add_exception_handler(ServerError, server_error_handler)
+app.add_exception_handler(InvalidCredentialsError, invalid_credentials_handler)
+app.add_exception_handler(EmailNotVerifiedError, email_not_verified_handler)
+app.add_exception_handler(InvalidRefreshTokenError, invalid_refresh_token_handler)
+app.add_exception_handler(EmailAlreadyVerifiedError, email_already_verified_handler)
+app.add_exception_handler(IncorrectPasswordError, incorrect_password_handler)
 
 RateLimitExceptionHandler = Callable[[Request, Exception], Response]
 app.add_exception_handler(
     RateLimitExceeded,
     cast(RateLimitExceptionHandler, _rate_limit_exceeded_handler),
 )
-
 
 app.include_router(users_router, prefix="/api")
 app.include_router(utils_router, prefix="/api")
