@@ -8,6 +8,7 @@ from src.exceptions import (
     IncorrectPasswordError,
     InvalidCredentialsError,
     InvalidRefreshTokenError,
+    ProjectNotFoundError,
     ServerError,
     UserNotFoundError,
 )
@@ -19,6 +20,7 @@ __all__ = [
     "IncorrectPasswordError",
     "InvalidCredentialsError",
     "InvalidRefreshTokenError",
+    "ProjectNotFoundError",
     "ServerError",
     "UserNotFoundError",
     "duplicate_email_handler",
@@ -27,6 +29,7 @@ __all__ = [
     "incorrect_password_handler",
     "invalid_credentials_handler",
     "invalid_refresh_token_handler",
+    "project_not_found_handler",
     "server_error_handler",
     "user_not_found_handler",
 ]
@@ -88,4 +91,11 @@ async def incorrect_password_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={"message": "Old password is incorrect"},
+    )
+
+
+async def project_not_found_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"message": "Project not found"},
     )

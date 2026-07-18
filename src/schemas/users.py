@@ -1,5 +1,13 @@
 from pydantic import BaseModel, Field
 from typing import Optional
+from uuid import UUID
+
+
+class UserSchema(BaseModel):
+    id: UUID
+    email: str
+    username: str
+    avatar: Optional[str] = None
 
 
 class UserUploadAvatarResponceSchema(BaseModel):

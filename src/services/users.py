@@ -1,5 +1,4 @@
 from jose import jwt
-from libgravatar import Gravatar
 
 from src.conf.config import config
 from src.db.models import User
@@ -43,12 +42,10 @@ class UserService:
         if await self.repo.get_by_email(data.email):
             raise DuplicateEmailError
         try:
-            avatar = Gravatar(data.email).get_image()
             hashed_password = self.hash.get_password_hash(data.password)
             return await self.repo.create(
                 data,
                 hashed_password=hashed_password,
-                avatar=avatar,
             )
         except DuplicateEmailError:
             raise

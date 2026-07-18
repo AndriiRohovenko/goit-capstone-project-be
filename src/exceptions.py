@@ -35,3 +35,7 @@ class EmailAlreadyVerifiedError(Exception):
 
 class IncorrectPasswordError(Exception):
     """Raised when the provided current password does not match."""
+
+
+class ProjectNotFoundError(Exception):
+    """Raised when a project cannot be found for the current user."""
