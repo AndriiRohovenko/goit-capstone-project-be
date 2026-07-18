@@ -8,6 +8,7 @@ from src.exceptions import (
     IncorrectPasswordError,
     InvalidCredentialsError,
     InvalidRefreshTokenError,
+    ProjectContextNotFoundError,
     ProjectNotFoundError,
     ServerError,
     UserNotFoundError,
@@ -20,6 +21,7 @@ __all__ = [
     "IncorrectPasswordError",
     "InvalidCredentialsError",
     "InvalidRefreshTokenError",
+    "ProjectContextNotFoundError",
     "ProjectNotFoundError",
     "ServerError",
     "UserNotFoundError",
@@ -29,6 +31,7 @@ __all__ = [
     "incorrect_password_handler",
     "invalid_credentials_handler",
     "invalid_refresh_token_handler",
+    "project_context_not_found_handler",
     "project_not_found_handler",
     "server_error_handler",
     "user_not_found_handler",
@@ -98,4 +101,11 @@ async def project_not_found_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={"message": "Project not found"},
+    )
+
+
+async def project_context_not_found_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"message": "Project context not found"},
     )

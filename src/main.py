@@ -21,6 +21,7 @@ from src.api.exceptions import (
     IncorrectPasswordError,
     InvalidCredentialsError,
     InvalidRefreshTokenError,
+    ProjectContextNotFoundError,
     ProjectNotFoundError,
     ServerError,
     UserNotFoundError,
@@ -30,6 +31,7 @@ from src.api.exceptions import (
     incorrect_password_handler,
     invalid_credentials_handler,
     invalid_refresh_token_handler,
+    project_context_not_found_handler,
     project_not_found_handler,
     server_error_handler,
     user_not_found_handler,
@@ -74,6 +76,7 @@ app.add_exception_handler(InvalidRefreshTokenError, invalid_refresh_token_handle
 app.add_exception_handler(EmailAlreadyVerifiedError, email_already_verified_handler)
 app.add_exception_handler(IncorrectPasswordError, incorrect_password_handler)
 app.add_exception_handler(ProjectNotFoundError, project_not_found_handler)
+app.add_exception_handler(ProjectContextNotFoundError, project_context_not_found_handler)
 
 RateLimitExceptionHandler = Callable[[Request, Exception], Response]
 app.add_exception_handler(

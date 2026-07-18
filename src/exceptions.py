@@ -39,3 +39,7 @@ class IncorrectPasswordError(Exception):
 
 class ProjectNotFoundError(Exception):
     """Raised when a project cannot be found for the current user."""
+
+
+class ProjectContextNotFoundError(Exception):
+    """Raised when a project context cannot be found for the current user."""
