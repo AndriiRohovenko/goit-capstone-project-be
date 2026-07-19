@@ -23,6 +23,7 @@ from src.api.exceptions import (
     InvalidRefreshTokenError,
     ProjectContextNotFoundError,
     ProjectNotFoundError,
+    RequirementNotFoundError,
     ServerError,
     UserNotFoundError,
     duplicate_email_handler,
@@ -33,12 +34,14 @@ from src.api.exceptions import (
     invalid_refresh_token_handler,
     project_context_not_found_handler,
     project_not_found_handler,
+    requirement_not_found_handler,
     server_error_handler,
     user_not_found_handler,
 )
 from src.api.users import router as users_router
 from src.api.utils import router as utils_router
 from src.api.projects import router as projects_router
+from src.api.requirements import router as requirements_router
 from src.conf.limiter import limiter
 
 app = FastAPI()
@@ -77,6 +80,7 @@ app.add_exception_handler(EmailAlreadyVerifiedError, email_already_verified_hand
 app.add_exception_handler(IncorrectPasswordError, incorrect_password_handler)
 app.add_exception_handler(ProjectNotFoundError, project_not_found_handler)
 app.add_exception_handler(ProjectContextNotFoundError, project_context_not_found_handler)
+app.add_exception_handler(RequirementNotFoundError, requirement_not_found_handler)
 
 RateLimitExceptionHandler = Callable[[Request, Exception], Response]
 app.add_exception_handler(
@@ -88,3 +92,4 @@ app.include_router(users_router, prefix="/api")
 app.include_router(utils_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(projects_router, prefix="/api")
+app.include_router(requirements_router, prefix="/api")
