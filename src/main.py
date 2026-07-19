@@ -18,6 +18,8 @@ from src.api.exceptions import (
     DuplicateEmailError,
     EmailAlreadyVerifiedError,
     EmailNotVerifiedError,
+    GenerationFailedError,
+    GenerationNotFoundError,
     IncorrectPasswordError,
     InvalidCredentialsError,
     InvalidRefreshTokenError,
@@ -25,10 +27,13 @@ from src.api.exceptions import (
     ProjectNotFoundError,
     RequirementNotFoundError,
     ServerError,
+    UnsupportedGenerationTypeError,
     UserNotFoundError,
     duplicate_email_handler,
     email_already_verified_handler,
     email_not_verified_handler,
+    generation_failed_handler,
+    generation_not_found_handler,
     incorrect_password_handler,
     invalid_credentials_handler,
     invalid_refresh_token_handler,
@@ -36,14 +41,15 @@ from src.api.exceptions import (
     project_not_found_handler,
     requirement_not_found_handler,
     server_error_handler,
+    unsupported_generation_type_handler,
     user_not_found_handler,
 )
 from src.api.users import router as users_router
 from src.api.utils import router as utils_router
 from src.api.projects import router as projects_router
 from src.api.requirements import router as requirements_router
+from src.api.generations import router as generations_router
 from src.conf.limiter import limiter
-
 app = FastAPI()
 app.state.limiter = limiter
 app.add_middleware(
@@ -81,6 +87,11 @@ app.add_exception_handler(IncorrectPasswordError, incorrect_password_handler)
 app.add_exception_handler(ProjectNotFoundError, project_not_found_handler)
 app.add_exception_handler(ProjectContextNotFoundError, project_context_not_found_handler)
 app.add_exception_handler(RequirementNotFoundError, requirement_not_found_handler)
+app.add_exception_handler(GenerationNotFoundError, generation_not_found_handler)
+app.add_exception_handler(GenerationFailedError, generation_failed_handler)
+app.add_exception_handler(
+    UnsupportedGenerationTypeError, unsupported_generation_type_handler
+)
 
 RateLimitExceptionHandler = Callable[[Request, Exception], Response]
 app.add_exception_handler(
@@ -93,3 +104,4 @@ app.include_router(utils_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(projects_router, prefix="/api")
 app.include_router(requirements_router, prefix="/api")
+app.include_router(generations_router, prefix="/api")

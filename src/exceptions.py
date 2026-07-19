@@ -47,3 +47,19 @@ class ProjectContextNotFoundError(Exception):
 
 class RequirementNotFoundError(Exception):
     """Raised when a requirement cannot be found for the current user."""
+
+
+class GenerationNotFoundError(Exception):
+    """Raised when a generation cannot be found for the current user."""
+
+
+class GenerationFailedError(Exception):
+    """Raised when an AI generation call fails after being persisted as failed."""
+
+    def __init__(self, message: str = "AI generation failed"):
+        super().__init__(message)
+        self.message = message
+
+
+class UnsupportedGenerationTypeError(Exception):
+    """Raised when a generation type is not supported by the API."""
