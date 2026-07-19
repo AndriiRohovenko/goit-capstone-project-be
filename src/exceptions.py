@@ -43,3 +43,7 @@ class ProjectNotFoundError(Exception):
 
 class ProjectContextNotFoundError(Exception):
     """Raised when a project context cannot be found for the current user."""
+
+
+class RequirementNotFoundError(Exception):
+    """Raised when a requirement cannot be found for the current user."""

@@ -10,6 +10,7 @@ from src.exceptions import (
     InvalidRefreshTokenError,
     ProjectContextNotFoundError,
     ProjectNotFoundError,
+    RequirementNotFoundError,
     ServerError,
     UserNotFoundError,
 )
@@ -23,6 +24,7 @@ __all__ = [
     "InvalidRefreshTokenError",
     "ProjectContextNotFoundError",
     "ProjectNotFoundError",
+    "RequirementNotFoundError",
     "ServerError",
     "UserNotFoundError",
     "duplicate_email_handler",
@@ -33,6 +35,7 @@ __all__ = [
     "invalid_refresh_token_handler",
     "project_context_not_found_handler",
     "project_not_found_handler",
+    "requirement_not_found_handler",
     "server_error_handler",
     "user_not_found_handler",
 ]
@@ -108,4 +111,11 @@ async def project_context_not_found_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={"message": "Project context not found"},
+    )
+
+
+async def requirement_not_found_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"message": "Requirement not found"},
     )
