@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ENV_FILE = ".env.dev" if Path(".env.dev").is_file() else ".env"
@@ -33,6 +34,9 @@ class BaseConfig(BaseSettings):
     REDIS_HOST: str
     REDIS_PORT: int
     REDIS_PASSWORD: str
+
+    OPENAI_API_KEY: str
+    OPENAI_MODEL: str = Field(default="gpt-4o-mini")
 
     model_config = SettingsConfigDict(
         env_file=ENV_FILE,

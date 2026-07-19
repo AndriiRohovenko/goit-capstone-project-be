@@ -12,7 +12,7 @@ from .enums import RequirementPriority, RequirementStatus, RequirementType
 from .mixins import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
-    from .generation import AIGeneration
+    from .artifact import GeneratedArtifact
     from .project import Project
 
 
@@ -53,7 +53,7 @@ class Requirement(UUIDMixin, TimestampMixin, Base):
     )
 
     project: Mapped[Project] = relationship(back_populates="requirements")
-    generations: Mapped[list[AIGeneration]] = relationship(
+    artifacts: Mapped[list[GeneratedArtifact]] = relationship(
         back_populates="requirement",
         cascade="all, delete-orphan",
     )

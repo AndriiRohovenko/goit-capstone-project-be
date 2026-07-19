@@ -2,6 +2,8 @@ from fastapi import Request, status
 from fastapi.responses import JSONResponse
 
 from src.exceptions import (
+    ArtifactGenerationFailedError,
+    ArtifactNotFoundError,
     DuplicateEmailError,
     EmailAlreadyVerifiedError,
     EmailNotVerifiedError,
@@ -12,10 +14,13 @@ from src.exceptions import (
     ProjectNotFoundError,
     RequirementNotFoundError,
     ServerError,
+    UnsupportedGenerationTypeError,
     UserNotFoundError,
 )
 
 __all__ = [
+    "ArtifactGenerationFailedError",
+    "ArtifactNotFoundError",
     "DuplicateEmailError",
     "EmailAlreadyVerifiedError",
     "EmailNotVerifiedError",
@@ -26,7 +31,10 @@ __all__ = [
     "ProjectNotFoundError",
     "RequirementNotFoundError",
     "ServerError",
+    "UnsupportedGenerationTypeError",
     "UserNotFoundError",
+    "artifact_generation_failed_handler",
+    "artifact_not_found_handler",
     "duplicate_email_handler",
     "email_already_verified_handler",
     "email_not_verified_handler",
@@ -37,6 +45,7 @@ __all__ = [
     "project_not_found_handler",
     "requirement_not_found_handler",
     "server_error_handler",
+    "unsupported_generation_type_handler",
     "user_not_found_handler",
 ]
 
@@ -118,4 +127,26 @@ async def requirement_not_found_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={"message": "Requirement not found"},
+    )
+
+
+async def artifact_not_found_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"message": "Artifact not found"},
+    )
+
+
+async def artifact_generation_failed_handler(request: Request, exc: Exception):
+    message = getattr(exc, "message", "AI generation failed")
+    return JSONResponse(
+        status_code=status.HTTP_502_BAD_GATEWAY,
+        content={"message": message},
+    )
+
+
+async def unsupported_generation_type_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"message": "Unsupported generation type"},
     )
