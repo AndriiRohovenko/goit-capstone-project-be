@@ -15,11 +15,11 @@ import time
 
 from src.api.auth import router as auth_router
 from src.api.exceptions import (
+    ArtifactGenerationFailedError,
+    ArtifactNotFoundError,
     DuplicateEmailError,
     EmailAlreadyVerifiedError,
     EmailNotVerifiedError,
-    GenerationFailedError,
-    GenerationNotFoundError,
     IncorrectPasswordError,
     InvalidCredentialsError,
     InvalidRefreshTokenError,
@@ -29,11 +29,11 @@ from src.api.exceptions import (
     ServerError,
     UnsupportedGenerationTypeError,
     UserNotFoundError,
+    artifact_generation_failed_handler,
+    artifact_not_found_handler,
     duplicate_email_handler,
     email_already_verified_handler,
     email_not_verified_handler,
-    generation_failed_handler,
-    generation_not_found_handler,
     incorrect_password_handler,
     invalid_credentials_handler,
     invalid_refresh_token_handler,
@@ -48,7 +48,7 @@ from src.api.users import router as users_router
 from src.api.utils import router as utils_router
 from src.api.projects import router as projects_router
 from src.api.requirements import router as requirements_router
-from src.api.generations import router as generations_router
+from src.api.artifacts import router as artifacts_router
 from src.conf.limiter import limiter
 app = FastAPI()
 app.state.limiter = limiter
@@ -87,8 +87,10 @@ app.add_exception_handler(IncorrectPasswordError, incorrect_password_handler)
 app.add_exception_handler(ProjectNotFoundError, project_not_found_handler)
 app.add_exception_handler(ProjectContextNotFoundError, project_context_not_found_handler)
 app.add_exception_handler(RequirementNotFoundError, requirement_not_found_handler)
-app.add_exception_handler(GenerationNotFoundError, generation_not_found_handler)
-app.add_exception_handler(GenerationFailedError, generation_failed_handler)
+app.add_exception_handler(ArtifactNotFoundError, artifact_not_found_handler)
+app.add_exception_handler(
+    ArtifactGenerationFailedError, artifact_generation_failed_handler
+)
 app.add_exception_handler(
     UnsupportedGenerationTypeError, unsupported_generation_type_handler
 )
@@ -104,4 +106,4 @@ app.include_router(utils_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(projects_router, prefix="/api")
 app.include_router(requirements_router, prefix="/api")
-app.include_router(generations_router, prefix="/api")
+app.include_router(artifacts_router, prefix="/api")

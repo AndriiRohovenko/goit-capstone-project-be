@@ -35,13 +35,6 @@ class GenerationType(StrEnum):
     AUTOMATION_RECOMMENDATION = "automation_recommendation"
 
 
-class GenerationStatus(StrEnum):
-    PENDING = "pending"
-    PROCESSING = "processing"
-    COMPLETED = "completed"
-    FAILED = "failed"
-
-
 class ArtifactType(StrEnum):
     TEST_CASES = "test_cases"
     CHECKLIST = "checklist"

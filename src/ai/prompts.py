@@ -3,10 +3,18 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
-from src.db.models.enums import GenerationType
+from src.db.models.enums import ArtifactType, GenerationType
 
 if TYPE_CHECKING:
     from src.db.models import ProjectContext, Requirement
+
+REGENERATABLE_ARTIFACT_TYPES = {
+    ArtifactType.REQUIREMENT_REVIEW,
+    ArtifactType.TEST_CASES,
+    ArtifactType.CHECKLIST,
+    ArtifactType.NEGATIVE_SCENARIOS,
+    ArtifactType.EDGE_CASES,
+}
 
 
 def _requirement_payload(requirement: Requirement) -> dict:
@@ -44,17 +52,21 @@ def build_request_payload(
     }
 
 
+def _user_message(payload: dict) -> str:
+    return (
+        "Analyze the following requirement and project context. "
+        "Respond with JSON only.\n\n"
+        f"{json.dumps(payload, default=str, indent=2)}"
+    )
+
+
 def build_prompts(
     generation_type: GenerationType,
     requirement: Requirement,
     context: ProjectContext | None,
 ) -> tuple[str, str]:
     payload = build_request_payload(requirement, context)
-    user = (
-        "Analyze the following requirement and project context. "
-        "Respond with JSON only.\n\n"
-        f"{json.dumps(payload, default=str, indent=2)}"
-    )
+    user = _user_message(payload)
 
     if generation_type == GenerationType.REQUIREMENT_REVIEW:
         system = (
@@ -94,3 +106,38 @@ def build_prompts(
         return system, user
 
     raise ValueError(f"unsupported generation_type: {generation_type}")
+
+
+def build_regenerate_prompts(
+    artifact_type: ArtifactType,
+    requirement: Requirement,
+    context: ProjectContext | None,
+) -> tuple[str, str]:
+    if artifact_type not in REGENERATABLE_ARTIFACT_TYPES:
+        raise ValueError(f"unsupported artifact_type for regenerate: {artifact_type}")
+
+    payload = build_request_payload(requirement, context)
+    user = _user_message(payload)
+
+    if artifact_type == ArtifactType.REQUIREMENT_REVIEW:
+        return build_prompts(
+            GenerationType.REQUIREMENT_REVIEW, requirement, context
+        )
+
+    type_value = artifact_type.value
+    content_hint = (
+        "a list of objects with title, steps, expected_result, and priority"
+        if artifact_type == ArtifactType.TEST_CASES
+        else "an object or array with concrete, actionable items"
+    )
+    system = (
+        "You are a senior QA engineer creating a single test design artifact. "
+        "Return a single JSON object with this shape:\n"
+        "{\n"
+        f'  "artifact_type": "{type_value}",\n'
+        "  \"content\": object_or_array\n"
+        "}\n"
+        f"artifact_type must be exactly \"{type_value}\". "
+        f"content should be {content_hint}."
+    )
+    return system, user

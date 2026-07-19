@@ -2,11 +2,11 @@ from fastapi import Request, status
 from fastapi.responses import JSONResponse
 
 from src.exceptions import (
+    ArtifactGenerationFailedError,
+    ArtifactNotFoundError,
     DuplicateEmailError,
     EmailAlreadyVerifiedError,
     EmailNotVerifiedError,
-    GenerationFailedError,
-    GenerationNotFoundError,
     IncorrectPasswordError,
     InvalidCredentialsError,
     InvalidRefreshTokenError,
@@ -19,11 +19,11 @@ from src.exceptions import (
 )
 
 __all__ = [
+    "ArtifactGenerationFailedError",
+    "ArtifactNotFoundError",
     "DuplicateEmailError",
     "EmailAlreadyVerifiedError",
     "EmailNotVerifiedError",
-    "GenerationFailedError",
-    "GenerationNotFoundError",
     "IncorrectPasswordError",
     "InvalidCredentialsError",
     "InvalidRefreshTokenError",
@@ -33,11 +33,11 @@ __all__ = [
     "ServerError",
     "UnsupportedGenerationTypeError",
     "UserNotFoundError",
+    "artifact_generation_failed_handler",
+    "artifact_not_found_handler",
     "duplicate_email_handler",
     "email_already_verified_handler",
     "email_not_verified_handler",
-    "generation_failed_handler",
-    "generation_not_found_handler",
     "incorrect_password_handler",
     "invalid_credentials_handler",
     "invalid_refresh_token_handler",
@@ -130,14 +130,14 @@ async def requirement_not_found_handler(request: Request, exc: Exception):
     )
 
 
-async def generation_not_found_handler(request: Request, exc: Exception):
+async def artifact_not_found_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
-        content={"message": "Generation not found"},
+        content={"message": "Artifact not found"},
     )
 
 
-async def generation_failed_handler(request: Request, exc: Exception):
+async def artifact_generation_failed_handler(request: Request, exc: Exception):
     message = getattr(exc, "message", "AI generation failed")
     return JSONResponse(
         status_code=status.HTTP_502_BAD_GATEWAY,
