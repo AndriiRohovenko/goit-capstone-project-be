@@ -4,8 +4,13 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.configurations import get_db_session
-from src.exceptions import ProjectNotFoundError, RequirementNotFoundError
+from src.exceptions import (
+    ProjectNotFoundError,
+    RequirementGroupNotFoundError,
+    RequirementNotFoundError,
+)
 from src.repository.projects import ProjectRepository
+from src.repository.requirement_groups import RequirementGroupRepository
 from src.repository.requirements import RequirementRepository
 from src.schemas.auth import UserSchema
 from src.schemas.requirements import (
@@ -21,10 +26,12 @@ class RequirementService:
         self,
         project_repository: ProjectRepository,
         requirement_repository: RequirementRepository,
+        group_repository: RequirementGroupRepository,
         user: UserSchema,
     ):
         self.project_repository = project_repository
         self.requirement_repository = requirement_repository
+        self.group_repository = group_repository
         self.user = user
 
     async def _require_owned_project(self, project_id: UUID) -> None:
@@ -34,19 +41,25 @@ class RequirementService:
         if not project:
             raise ProjectNotFoundError
 
+    async def _require_owned_group(self, group_id: UUID) -> None:
+        group = await self.group_repository.get_by_id(group_id, self.user.id)
+        if not group:
+            raise RequirementGroupNotFoundError
+
     async def create_requirement(
         self, project_id: UUID, data: RequirementCreate
     ) -> RequirementResponse:
         await self._require_owned_project(project_id)
+        await self._require_owned_group(data.group_id)
         requirement = await self.requirement_repository.create(project_id, data)
         return RequirementResponse.model_validate(requirement)
 
     async def get_all_requirements(
-        self, project_id: UUID
+        self, project_id: UUID, group_name: str | None = None
     ) -> list[RequirementResponse]:
         await self._require_owned_project(project_id)
         requirements = await self.requirement_repository.get_all_by_project(
-            project_id
+            project_id, group_name=group_name
         )
         return [
             RequirementResponse.model_validate(requirement)
@@ -54,7 +67,9 @@ class RequirementService:
         ]
 
     async def get_requirement_by_id(
-        self, project_id: UUID, requirement_id: UUID
+        self,
+        project_id: UUID,
+        requirement_id: UUID,
     ) -> RequirementResponse:
         await self._require_owned_project(project_id)
         requirement = await self.requirement_repository.get_by_id(
@@ -71,6 +86,8 @@ class RequirementService:
         data: RequirementUpdate,
     ) -> RequirementResponse:
         await self._require_owned_project(project_id)
+        if data.group_id is not None:
+            await self._require_owned_group(data.group_id)
         requirement = await self.requirement_repository.get_by_id(
             requirement_id, project_id
         )
@@ -98,5 +115,6 @@ def get_requirement_service(
     return RequirementService(
         ProjectRepository(db),
         RequirementRepository(db),
+        RequirementGroupRepository(db),
         user,
     )

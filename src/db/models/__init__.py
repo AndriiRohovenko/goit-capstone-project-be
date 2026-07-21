@@ -18,6 +18,7 @@ from .enums import (
 from .mixins import TimestampMixin, UUIDMixin
 from .project import Project, ProjectContext
 from .requirement import Requirement
+from .requirement_group import RequirementGroup
 from .user import User
 
 __all__ = [
@@ -29,6 +30,7 @@ __all__ = [
     "ProjectContext",
     "ProjectStatus",
     "Requirement",
+    "RequirementGroup",
     "RequirementPriority",
     "RequirementStatus",
     "RequirementType",

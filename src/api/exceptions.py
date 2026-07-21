@@ -12,6 +12,8 @@ from src.exceptions import (
     InvalidRefreshTokenError,
     ProjectContextNotFoundError,
     ProjectNotFoundError,
+    RequirementGroupNotEmptyError,
+    RequirementGroupNotFoundError,
     RequirementNotFoundError,
     ServerError,
     UnsupportedGenerationTypeError,
@@ -29,6 +31,8 @@ __all__ = [
     "InvalidRefreshTokenError",
     "ProjectContextNotFoundError",
     "ProjectNotFoundError",
+    "RequirementGroupNotEmptyError",
+    "RequirementGroupNotFoundError",
     "RequirementNotFoundError",
     "ServerError",
     "UnsupportedGenerationTypeError",
@@ -43,6 +47,8 @@ __all__ = [
     "invalid_refresh_token_handler",
     "project_context_not_found_handler",
     "project_not_found_handler",
+    "requirement_group_not_empty_handler",
+    "requirement_group_not_found_handler",
     "requirement_not_found_handler",
     "server_error_handler",
     "unsupported_generation_type_handler",
@@ -127,6 +133,20 @@ async def requirement_not_found_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={"message": "Requirement not found"},
+    )
+
+
+async def requirement_group_not_found_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"message": "Requirement group not found"},
+    )
+
+
+async def requirement_group_not_empty_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={"message": "Requirement group still has requirements"},
     )
 
 

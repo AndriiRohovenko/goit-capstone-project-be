@@ -14,6 +14,7 @@ from .mixins import TimestampMixin, UUIDMixin
 if TYPE_CHECKING:
     from .artifact import GeneratedArtifact
     from .project import Project
+    from .requirement_group import RequirementGroup
 
 
 class Requirement(UUIDMixin, TimestampMixin, Base):
@@ -21,6 +22,11 @@ class Requirement(UUIDMixin, TimestampMixin, Base):
 
     project_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    group_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("requirement_groups.id", ondelete="RESTRICT"),
         nullable=False,
         index=True,
     )
@@ -53,6 +59,7 @@ class Requirement(UUIDMixin, TimestampMixin, Base):
     )
 
     project: Mapped[Project] = relationship(back_populates="requirements")
+    group: Mapped[RequirementGroup] = relationship(back_populates="requirements")
     artifacts: Mapped[list[GeneratedArtifact]] = relationship(
         back_populates="requirement",
         cascade="all, delete-orphan",

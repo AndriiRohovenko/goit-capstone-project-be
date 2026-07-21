@@ -25,6 +25,8 @@ from src.api.exceptions import (
     InvalidRefreshTokenError,
     ProjectContextNotFoundError,
     ProjectNotFoundError,
+    RequirementGroupNotEmptyError,
+    RequirementGroupNotFoundError,
     RequirementNotFoundError,
     ServerError,
     UnsupportedGenerationTypeError,
@@ -39,6 +41,8 @@ from src.api.exceptions import (
     invalid_refresh_token_handler,
     project_context_not_found_handler,
     project_not_found_handler,
+    requirement_group_not_empty_handler,
+    requirement_group_not_found_handler,
     requirement_not_found_handler,
     server_error_handler,
     unsupported_generation_type_handler,
@@ -48,6 +52,7 @@ from src.api.users import router as users_router
 from src.api.utils import router as utils_router
 from src.api.projects import router as projects_router
 from src.api.requirements import router as requirements_router
+from src.api.requirement_groups import router as requirement_groups_router
 from src.api.artifacts import router as artifacts_router
 from src.conf.limiter import limiter
 app = FastAPI()
@@ -87,6 +92,12 @@ app.add_exception_handler(IncorrectPasswordError, incorrect_password_handler)
 app.add_exception_handler(ProjectNotFoundError, project_not_found_handler)
 app.add_exception_handler(ProjectContextNotFoundError, project_context_not_found_handler)
 app.add_exception_handler(RequirementNotFoundError, requirement_not_found_handler)
+app.add_exception_handler(
+    RequirementGroupNotFoundError, requirement_group_not_found_handler
+)
+app.add_exception_handler(
+    RequirementGroupNotEmptyError, requirement_group_not_empty_handler
+)
 app.add_exception_handler(ArtifactNotFoundError, artifact_not_found_handler)
 app.add_exception_handler(
     ArtifactGenerationFailedError, artifact_generation_failed_handler
@@ -105,5 +116,6 @@ app.include_router(users_router, prefix="/api")
 app.include_router(utils_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(projects_router, prefix="/api")
+app.include_router(requirement_groups_router, prefix="/api")
 app.include_router(requirements_router, prefix="/api")
 app.include_router(artifacts_router, prefix="/api")
