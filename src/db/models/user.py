@@ -11,6 +11,7 @@ from .mixins import UUIDMixin
 
 if TYPE_CHECKING:
     from .project import Project
+    from .requirement_group import RequirementGroup
 
 
 class User(UUIDMixin, Base):
@@ -25,6 +26,10 @@ class User(UUIDMixin, Base):
     is_verified: Mapped[bool] = mapped_column(default=False)
     avatar: Mapped[str | None] = mapped_column(String(255), nullable=True)
     projects: Mapped[list[Project]] = relationship(
+        back_populates="owner",
+        cascade="all, delete-orphan",
+    )
+    requirement_groups: Mapped[list[RequirementGroup]] = relationship(
         back_populates="owner",
         cascade="all, delete-orphan",
     )

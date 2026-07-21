@@ -13,6 +13,7 @@ from src.db.models.enums import (
 class RequirementCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=250)
     description: str = Field(..., min_length=1)
+    group_id: UUID
     acceptance_criteria: list[str] = Field(default_factory=list)
     business_rules: list[str] = Field(default_factory=list)
     requirement_type: RequirementType = RequirementType.USER_STORY
@@ -24,6 +25,7 @@ class RequirementCreate(BaseModel):
 class RequirementUpdate(BaseModel):
     title: str | None = Field(None, min_length=1, max_length=250)
     description: str | None = Field(None, min_length=1)
+    group_id: UUID | None = None
     acceptance_criteria: list[str] | None = None
     business_rules: list[str] | None = None
     requirement_type: RequirementType | None = None
@@ -35,6 +37,7 @@ class RequirementUpdate(BaseModel):
 class RequirementResponse(BaseModel):
     id: UUID
     project_id: UUID
+    group_id: UUID
     title: str
     description: str
     acceptance_criteria: list[str]

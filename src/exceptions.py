@@ -49,6 +49,14 @@ class RequirementNotFoundError(Exception):
     """Raised when a requirement cannot be found for the current user."""
 
 
+class RequirementGroupNotFoundError(Exception):
+    """Raised when a requirement group cannot be found for the current user."""
+
+
+class RequirementGroupNotEmptyError(Exception):
+    """Raised when deleting a requirement group that still has requirements."""
+
+
 class ArtifactNotFoundError(Exception):
     """Raised when an artifact cannot be found for the current user."""
 

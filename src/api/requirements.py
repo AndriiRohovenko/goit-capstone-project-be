@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from src.schemas.requirements import (
     RequirementCreate,
@@ -31,9 +31,12 @@ async def create_requirement(
 )
 async def get_all_requirements(
     project_id: UUID,
+    group_name: str | None = Query(None),
     requirement_service: RequirementService = Depends(get_requirement_service),
 ):
-    return await requirement_service.get_all_requirements(project_id)
+    return await requirement_service.get_all_requirements(
+        project_id, group_name=group_name
+    )
 
 
 @router.get(

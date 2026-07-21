@@ -21,4 +21,4 @@ RUN poetry config virtualenvs.create false \
 EXPOSE 5000
 
 # Start the API
-CMD ["start-prod"]
+CMD ["poetry", "run", "start-prod"]
