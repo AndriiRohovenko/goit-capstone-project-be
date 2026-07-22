@@ -62,6 +62,47 @@ def parse_test_generation(
     return results
 
 
+class CoveredArea(BaseModel):
+    area: str
+    requirement_ids: list[str] = Field(default_factory=list)
+
+
+class PartialArea(BaseModel):
+    area: str
+    note: str | None = None
+    requirement_ids: list[str] = Field(default_factory=list)
+
+
+class SuggestedRequirement(BaseModel):
+    title: str
+    description: str = ""
+    acceptance_criteria: list[str] = Field(default_factory=list)
+    requirement_type: str = "feature"
+    priority: str = "medium"
+
+
+class MissingArea(BaseModel):
+    area: str
+    risk: str = "medium"
+    suggested_requirement: SuggestedRequirement | None = None
+
+
+class CoverageAnalysisLLMResponse(BaseModel):
+    coverage_score: int | None = None
+    covered_areas: list[CoveredArea] = Field(default_factory=list)
+    partial_areas: list[PartialArea] = Field(default_factory=list)
+    missing_areas: list[MissingArea] = Field(default_factory=list)
+
+
+def parse_coverage_analysis(
+    payload: dict[str, Any],
+) -> CoverageAnalysisLLMResponse:
+    parsed = CoverageAnalysisLLMResponse.model_validate(payload)
+    if parsed.coverage_score is not None:
+        parsed.coverage_score = max(0, min(100, parsed.coverage_score))
+    return parsed
+
+
 def parse_single_artifact(
     payload: dict[str, Any],
     expected_type: ArtifactType,

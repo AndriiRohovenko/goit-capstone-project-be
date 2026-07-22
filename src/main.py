@@ -17,7 +17,9 @@ from src.api.auth import router as auth_router
 from src.api.exceptions import (
     ArtifactGenerationFailedError,
     ArtifactNotFoundError,
+    CoverageReportNotFoundError,
     DuplicateEmailError,
+    DuplicateRequirementGroupNameError,
     EmailAlreadyVerifiedError,
     EmailNotVerifiedError,
     IncorrectPasswordError,
@@ -33,7 +35,9 @@ from src.api.exceptions import (
     UserNotFoundError,
     artifact_generation_failed_handler,
     artifact_not_found_handler,
+    coverage_report_not_found_handler,
     duplicate_email_handler,
+    duplicate_requirement_group_name_handler,
     email_already_verified_handler,
     email_not_verified_handler,
     incorrect_password_handler,
@@ -54,6 +58,7 @@ from src.api.projects import router as projects_router
 from src.api.requirements import router as requirements_router
 from src.api.requirement_groups import router as requirement_groups_router
 from src.api.artifacts import router as artifacts_router
+from src.api.coverage import router as coverage_router
 from src.conf.limiter import limiter
 app = FastAPI()
 app.state.limiter = limiter
@@ -98,12 +103,18 @@ app.add_exception_handler(
 app.add_exception_handler(
     RequirementGroupNotEmptyError, requirement_group_not_empty_handler
 )
+app.add_exception_handler(
+    DuplicateRequirementGroupNameError, duplicate_requirement_group_name_handler
+)
 app.add_exception_handler(ArtifactNotFoundError, artifact_not_found_handler)
 app.add_exception_handler(
     ArtifactGenerationFailedError, artifact_generation_failed_handler
 )
 app.add_exception_handler(
     UnsupportedGenerationTypeError, unsupported_generation_type_handler
+)
+app.add_exception_handler(
+    CoverageReportNotFoundError, coverage_report_not_found_handler
 )
 
 RateLimitExceptionHandler = Callable[[Request, Exception], Response]
@@ -119,3 +130,4 @@ app.include_router(projects_router, prefix="/api")
 app.include_router(requirement_groups_router, prefix="/api")
 app.include_router(requirements_router, prefix="/api")
 app.include_router(artifacts_router, prefix="/api")
+app.include_router(coverage_router, prefix="/api")

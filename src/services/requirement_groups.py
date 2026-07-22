@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.configurations import get_db_session
 from src.exceptions import (
+    DuplicateRequirementGroupNameError,
     RequirementGroupNotEmptyError,
     RequirementGroupNotFoundError,
 )
@@ -30,6 +31,11 @@ class RequirementGroupService:
     async def create_group(
         self, data: RequirementGroupCreate
     ) -> RequirementGroupResponse:
+        existing = await self.group_repository.get_by_name_ci(
+            self.user.id, data.name
+        )
+        if existing:
+            raise DuplicateRequirementGroupNameError
         group = await self.group_repository.create(self.user.id, data)
         return RequirementGroupResponse.model_validate(group)
 
@@ -49,6 +55,12 @@ class RequirementGroupService:
         group = await self.group_repository.get_by_id(group_id, self.user.id)
         if not group:
             raise RequirementGroupNotFoundError
+        if data.name is not None:
+            existing = await self.group_repository.get_by_name_ci(
+                self.user.id, data.name
+            )
+            if existing and existing.id != group.id:
+                raise DuplicateRequirementGroupNameError
         updated = await self.group_repository.update(group, data)
         return RequirementGroupResponse.model_validate(updated)
 

@@ -38,9 +38,20 @@ class RequirementGroupRepository:
         result = await self.db.execute(
             select(RequirementGroup)
             .filter(RequirementGroup.owner_id == owner_id)
-            .order_by(RequirementGroup.created_at.desc())
+            .order_by(RequirementGroup.name.asc())
         )
         return list(result.scalars().all())
+
+    async def get_by_name_ci(
+        self, owner_id: UUID, name: str
+    ) -> RequirementGroup | None:
+        result = await self.db.execute(
+            select(RequirementGroup).filter(
+                RequirementGroup.owner_id == owner_id,
+                func.lower(RequirementGroup.name) == name.lower(),
+            )
+        )
+        return result.scalar_one_or_none()
 
     async def count_requirements(self, group_id: UUID) -> int:
         result = await self.db.execute(

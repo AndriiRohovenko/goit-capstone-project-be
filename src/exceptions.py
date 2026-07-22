@@ -57,6 +57,10 @@ class RequirementGroupNotEmptyError(Exception):
     """Raised when deleting a requirement group that still has requirements."""
 
 
+class DuplicateRequirementGroupNameError(Exception):
+    """Raised when a requirement group name already exists in the project."""
+
+
 class ArtifactNotFoundError(Exception):
     """Raised when an artifact cannot be found for the current user."""
 
@@ -71,3 +75,7 @@ class ArtifactGenerationFailedError(Exception):
 
 class UnsupportedGenerationTypeError(Exception):
     """Raised when a generation type is not supported by the API."""
+
+
+class CoverageReportNotFoundError(Exception):
+    """Raised when a coverage report cannot be found for the current user."""

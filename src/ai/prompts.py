@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from src.db.models.enums import ArtifactType, GenerationType
 
 if TYPE_CHECKING:
-    from src.db.models import ProjectContext, Requirement
+    from src.db.models import ProjectContext, Requirement, RequirementGroup
 
 REGENERATABLE_ARTIFACT_TYPES = {
     ArtifactType.REQUIREMENT_REVIEW,
@@ -106,6 +106,88 @@ def build_prompts(
         return system, user
 
     raise ValueError(f"unsupported generation_type: {generation_type}")
+
+
+def _coverage_requirement_payload(requirement: Requirement) -> dict:
+    return {
+        "id": str(requirement.id),
+        "title": requirement.title,
+        "description": requirement.description,
+        "acceptance_criteria": requirement.acceptance_criteria,
+        "business_rules": requirement.business_rules,
+        "requirement_type": requirement.requirement_type,
+        "priority": requirement.priority,
+        "status": requirement.status,
+    }
+
+
+def build_coverage_payload(
+    group: RequirementGroup,
+    requirements: list[Requirement],
+    context: ProjectContext | None,
+) -> dict:
+    return {
+        "group": {
+            "id": str(group.id),
+            "name": group.name,
+            "description": group.description,
+        },
+        "existing_requirements": [
+            _coverage_requirement_payload(requirement)
+            for requirement in requirements
+        ],
+        "project_context": _context_payload(context),
+    }
+
+
+def build_coverage_prompts(
+    group: RequirementGroup,
+    requirements: list[Requirement],
+    context: ProjectContext | None,
+) -> tuple[str, str]:
+    payload = build_coverage_payload(group, requirements, context)
+    user = (
+        "Analyze test/requirements coverage for the following requirement "
+        "group. Infer the functional areas and scenarios that a product in "
+        "this domain should cover for this group, then compare them against "
+        "the existing requirements. Respond with JSON only.\n\n"
+        f"{json.dumps(payload, default=str, indent=2)}"
+    )
+    system = (
+        "You are a senior QA analyst assessing how completely a group of "
+        "requirements covers the intended functionality. Given the group, its "
+        "existing requirements, and the project context, determine which "
+        "functional areas are covered, partially covered, or missing. "
+        "Return a single JSON object with this shape:\n"
+        "{\n"
+        '  "coverage_score": number (0-100),\n'
+        '  "covered_areas": [\n'
+        '    { "area": string, "requirement_ids": [string] }\n'
+        "  ],\n"
+        '  "partial_areas": [\n'
+        '    { "area": string, "note": string, "requirement_ids": [string] }\n'
+        "  ],\n"
+        '  "missing_areas": [\n'
+        "    {\n"
+        '      "area": string,\n'
+        '      "risk": "low" | "medium" | "high",\n'
+        '      "suggested_requirement": {\n'
+        '        "title": string,\n'
+        '        "description": string,\n'
+        '        "acceptance_criteria": [string],\n'
+        '        "requirement_type": "user_story" | "feature" | "api" | '
+        '"business_requirement" | "other",\n'
+        '        "priority": "low" | "medium" | "high" | "critical"\n'
+        "      }\n"
+        "    }\n"
+        "  ]\n"
+        "}\n"
+        "coverage_score reflects how completely the existing requirements "
+        "cover the expected functionality. Use requirement_ids only from the "
+        "provided requirements. Be concrete and domain-aware; each "
+        "suggested_requirement must be actionable and ready to add."
+    )
+    return system, user
 
 
 def build_regenerate_prompts(

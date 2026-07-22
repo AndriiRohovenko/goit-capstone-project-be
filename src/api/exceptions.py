@@ -4,7 +4,9 @@ from fastapi.responses import JSONResponse
 from src.exceptions import (
     ArtifactGenerationFailedError,
     ArtifactNotFoundError,
+    CoverageReportNotFoundError,
     DuplicateEmailError,
+    DuplicateRequirementGroupNameError,
     EmailAlreadyVerifiedError,
     EmailNotVerifiedError,
     IncorrectPasswordError,
@@ -23,7 +25,9 @@ from src.exceptions import (
 __all__ = [
     "ArtifactGenerationFailedError",
     "ArtifactNotFoundError",
+    "CoverageReportNotFoundError",
     "DuplicateEmailError",
+    "DuplicateRequirementGroupNameError",
     "EmailAlreadyVerifiedError",
     "EmailNotVerifiedError",
     "IncorrectPasswordError",
@@ -39,7 +43,9 @@ __all__ = [
     "UserNotFoundError",
     "artifact_generation_failed_handler",
     "artifact_not_found_handler",
+    "coverage_report_not_found_handler",
     "duplicate_email_handler",
+    "duplicate_requirement_group_name_handler",
     "email_already_verified_handler",
     "email_not_verified_handler",
     "incorrect_password_handler",
@@ -150,6 +156,13 @@ async def requirement_group_not_empty_handler(request: Request, exc: Exception):
     )
 
 
+async def duplicate_requirement_group_name_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={"message": "Requirement group name already exists"},
+    )
+
+
 async def artifact_not_found_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
@@ -169,4 +182,11 @@ async def unsupported_generation_type_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={"message": "Unsupported generation type"},
+    )
+
+
+async def coverage_report_not_found_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"message": "Coverage report not found"},
     )

@@ -31,11 +31,11 @@ async def create_requirement(
 )
 async def get_all_requirements(
     project_id: UUID,
-    group_name: str | None = Query(None),
+    group_id: UUID | None = Query(None),
     requirement_service: RequirementService = Depends(get_requirement_service),
 ):
     return await requirement_service.get_all_requirements(
-        project_id, group_name=group_name
+        project_id, group_id=group_id
     )
 
 

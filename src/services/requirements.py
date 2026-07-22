@@ -55,11 +55,13 @@ class RequirementService:
         return RequirementResponse.model_validate(requirement)
 
     async def get_all_requirements(
-        self, project_id: UUID, group_name: str | None = None
+        self, project_id: UUID, group_id: UUID | None = None
     ) -> list[RequirementResponse]:
         await self._require_owned_project(project_id)
+        if group_id is not None:
+            await self._require_owned_group(group_id)
         requirements = await self.requirement_repository.get_all_by_project(
-            project_id, group_name=group_name
+            project_id, group_id=group_id
         )
         return [
             RequirementResponse.model_validate(requirement)
