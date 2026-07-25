@@ -79,3 +79,7 @@ class UnsupportedGenerationTypeError(Exception):
 
 class CoverageReportNotFoundError(Exception):
     """Raised when a coverage report cannot be found for the current user."""
+
+
+class ArtifactsRequiredForCoverageError(Exception):
+    """Raised when coverage is requested without test design artifacts."""

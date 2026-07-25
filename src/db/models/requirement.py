@@ -13,6 +13,7 @@ from .mixins import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
     from .artifact import GeneratedArtifact
+    from .coverage_report import CoverageReport
     from .project import Project
     from .requirement_group import RequirementGroup
 
@@ -63,4 +64,9 @@ class Requirement(UUIDMixin, TimestampMixin, Base):
     artifacts: Mapped[list[GeneratedArtifact]] = relationship(
         back_populates="requirement",
         cascade="all, delete-orphan",
+    )
+    coverage_report: Mapped[CoverageReport | None] = relationship(
+        back_populates="requirement",
+        cascade="all, delete-orphan",
+        uselist=False,
     )

@@ -16,7 +16,7 @@ class RequirementGroupUpdate(BaseModel):
 
 class RequirementGroupResponse(BaseModel):
     id: UUID
-    owner_id: UUID
+    project_id: UUID
     name: str
     description: str | None
     created_at: datetime

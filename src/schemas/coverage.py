@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict
 class CoverageReportResponse(BaseModel):
     id: UUID
     project_id: UUID
-    group_id: UUID
+    requirement_id: UUID
     content: dict | list
     coverage_score: int | None
     model: str | None

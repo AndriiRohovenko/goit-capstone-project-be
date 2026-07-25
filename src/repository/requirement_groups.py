@@ -15,39 +15,39 @@ class RequirementGroupRepository:
         self.db = db
 
     async def create(
-        self, owner_id: UUID, data: RequirementGroupCreate
+        self, project_id: UUID, data: RequirementGroupCreate
     ) -> RequirementGroup:
-        group = RequirementGroup(owner_id=owner_id, **data.model_dump())
+        group = RequirementGroup(project_id=project_id, **data.model_dump())
         self.db.add(group)
         await self.db.commit()
         await self.db.refresh(group)
         return group
 
     async def get_by_id(
-        self, group_id: UUID, owner_id: UUID
+        self, group_id: UUID, project_id: UUID
     ) -> RequirementGroup | None:
         result = await self.db.execute(
             select(RequirementGroup).filter(
                 RequirementGroup.id == group_id,
-                RequirementGroup.owner_id == owner_id,
+                RequirementGroup.project_id == project_id,
             )
         )
         return result.scalar_one_or_none()
 
-    async def get_all_by_owner(self, owner_id: UUID) -> list[RequirementGroup]:
+    async def get_all_by_project(self, project_id: UUID) -> list[RequirementGroup]:
         result = await self.db.execute(
             select(RequirementGroup)
-            .filter(RequirementGroup.owner_id == owner_id)
+            .filter(RequirementGroup.project_id == project_id)
             .order_by(RequirementGroup.name.asc())
         )
         return list(result.scalars().all())
 
     async def get_by_name_ci(
-        self, owner_id: UUID, name: str
+        self, project_id: UUID, name: str
     ) -> RequirementGroup | None:
         result = await self.db.execute(
             select(RequirementGroup).filter(
-                RequirementGroup.owner_id == owner_id,
+                RequirementGroup.project_id == project_id,
                 func.lower(RequirementGroup.name) == name.lower(),
             )
         )

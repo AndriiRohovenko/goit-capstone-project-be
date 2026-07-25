@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from src.exceptions import (
     ArtifactGenerationFailedError,
     ArtifactNotFoundError,
+    ArtifactsRequiredForCoverageError,
     CoverageReportNotFoundError,
     DuplicateEmailError,
     DuplicateRequirementGroupNameError,
@@ -25,6 +26,7 @@ from src.exceptions import (
 __all__ = [
     "ArtifactGenerationFailedError",
     "ArtifactNotFoundError",
+    "ArtifactsRequiredForCoverageError",
     "CoverageReportNotFoundError",
     "DuplicateEmailError",
     "DuplicateRequirementGroupNameError",
@@ -43,6 +45,7 @@ __all__ = [
     "UserNotFoundError",
     "artifact_generation_failed_handler",
     "artifact_not_found_handler",
+    "artifacts_required_for_coverage_handler",
     "coverage_report_not_found_handler",
     "duplicate_email_handler",
     "duplicate_requirement_group_name_handler",
@@ -189,4 +192,15 @@ async def coverage_report_not_found_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={"message": "Coverage report not found"},
+    )
+
+
+async def artifacts_required_for_coverage_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={
+            "message": (
+                "Generate test design artifacts before running coverage analysis"
+            )
+        },
     )

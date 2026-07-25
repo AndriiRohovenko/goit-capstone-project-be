@@ -6,10 +6,17 @@ from typing import TYPE_CHECKING
 from src.db.models.enums import ArtifactType, GenerationType
 
 if TYPE_CHECKING:
-    from src.db.models import ProjectContext, Requirement, RequirementGroup
+    from src.db.models import GeneratedArtifact, ProjectContext, Requirement
 
 REGENERATABLE_ARTIFACT_TYPES = {
     ArtifactType.REQUIREMENT_REVIEW,
+    ArtifactType.TEST_CASES,
+    ArtifactType.CHECKLIST,
+    ArtifactType.NEGATIVE_SCENARIOS,
+    ArtifactType.EDGE_CASES,
+}
+
+COVERAGE_ARTIFACT_TYPES = {
     ArtifactType.TEST_CASES,
     ArtifactType.CHECKLIST,
     ArtifactType.NEGATIVE_SCENARIOS,
@@ -108,84 +115,83 @@ def build_prompts(
     raise ValueError(f"unsupported generation_type: {generation_type}")
 
 
-def _coverage_requirement_payload(requirement: Requirement) -> dict:
+def _artifact_payload(artifact: GeneratedArtifact) -> dict:
     return {
-        "id": str(requirement.id),
-        "title": requirement.title,
-        "description": requirement.description,
-        "acceptance_criteria": requirement.acceptance_criteria,
-        "business_rules": requirement.business_rules,
-        "requirement_type": requirement.requirement_type,
-        "priority": requirement.priority,
-        "status": requirement.status,
+        "artifact_type": artifact.artifact_type,
+        "content": artifact.content,
+        "is_edited": artifact.is_edited,
     }
 
 
 def build_coverage_payload(
-    group: RequirementGroup,
-    requirements: list[Requirement],
+    requirement: Requirement,
+    artifacts: list[GeneratedArtifact],
     context: ProjectContext | None,
 ) -> dict:
     return {
-        "group": {
-            "id": str(group.id),
-            "name": group.name,
-            "description": group.description,
+        "requirement": {
+            "id": str(requirement.id),
+            **_requirement_payload(requirement),
         },
-        "existing_requirements": [
-            _coverage_requirement_payload(requirement)
-            for requirement in requirements
-        ],
+        "artifacts": [_artifact_payload(artifact) for artifact in artifacts],
         "project_context": _context_payload(context),
     }
 
 
 def build_coverage_prompts(
-    group: RequirementGroup,
-    requirements: list[Requirement],
+    requirement: Requirement,
+    artifacts: list[GeneratedArtifact],
     context: ProjectContext | None,
 ) -> tuple[str, str]:
-    payload = build_coverage_payload(group, requirements, context)
+    payload = build_coverage_payload(requirement, artifacts, context)
     user = (
-        "Analyze test/requirements coverage for the following requirement "
-        "group. Infer the functional areas and scenarios that a product in "
-        "this domain should cover for this group, then compare them against "
-        "the existing requirements. Respond with JSON only.\n\n"
+        "Analyze how well the generated test design artifacts cover the "
+        "requirement below (including acceptance criteria and business rules). "
+        "Identify covered, partially covered, and missing scenarios. "
+        "Respond with JSON only.\n\n"
         f"{json.dumps(payload, default=str, indent=2)}"
     )
     system = (
-        "You are a senior QA analyst assessing how completely a group of "
-        "requirements covers the intended functionality. Given the group, its "
-        "existing requirements, and the project context, determine which "
-        "functional areas are covered, partially covered, or missing. "
+        "You are a senior QA analyst assessing test coverage of a single "
+        "software requirement based on its generated test artifacts. "
+        "Compare the requirement against the provided artifacts "
+        "(test_cases, checklist, negative_scenarios, edge_cases). "
         "Return a single JSON object with this shape:\n"
         "{\n"
         '  "coverage_score": number (0-100),\n'
         '  "covered_areas": [\n'
-        '    { "area": string, "requirement_ids": [string] }\n'
+        '    { "area": string, "artifact_refs": [string] }\n'
         "  ],\n"
         '  "partial_areas": [\n'
-        '    { "area": string, "note": string, "requirement_ids": [string] }\n'
+        '    { "area": string, "note": string, "artifact_refs": [string] }\n'
         "  ],\n"
-        '  "missing_areas": [\n'
+        '  "missing_scenarios": [\n'
         "    {\n"
         '      "area": string,\n'
         '      "risk": "low" | "medium" | "high",\n'
-        '      "suggested_requirement": {\n'
+        '      "scenario_type": "negative" | "edge" | "security" | '
+        '"accessibility" | "functional" | "other",\n'
+        '      "suggested_artifact": {\n'
+        '        "artifact_type": "test_cases" | "checklist" | '
+        '"negative_scenarios" | "edge_cases",\n'
         '        "title": string,\n'
-        '        "description": string,\n'
-        '        "acceptance_criteria": [string],\n'
-        '        "requirement_type": "user_story" | "feature" | "api" | '
-        '"business_requirement" | "other",\n'
-        '        "priority": "low" | "medium" | "high" | "critical"\n'
+        '        "steps_or_items": [string],\n'
+        '        "expected_result": string\n'
         "      }\n"
+        "    }\n"
+        "  ],\n"
+        '  "recommendations": [\n'
+        "    {\n"
+        '      "category": "missing_edge_cases" | "automation_priority" | '
+        '"risk" | "requirement_quality" | "other",\n'
+        '      "priority": "low" | "medium" | "high",\n'
+        '      "text": string\n'
         "    }\n"
         "  ]\n"
         "}\n"
-        "coverage_score reflects how completely the existing requirements "
-        "cover the expected functionality. Use requirement_ids only from the "
-        "provided requirements. Be concrete and domain-aware; each "
-        "suggested_requirement must be actionable and ready to add."
+        "coverage_score reflects how completely the artifacts cover the "
+        "requirement. artifact_refs should reference provided artifacts "
+        '(e.g. "test_cases#0"). Be concrete and actionable.'
     )
     return system, user
 

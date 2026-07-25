@@ -10,13 +10,12 @@ class CoverageReportRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_project_group(
-        self, project_id: UUID, group_id: UUID
+    async def get_by_requirement_id(
+        self, requirement_id: UUID
     ) -> CoverageReport | None:
         result = await self.db.execute(
             select(CoverageReport).filter(
-                CoverageReport.project_id == project_id,
-                CoverageReport.group_id == group_id,
+                CoverageReport.requirement_id == requirement_id
             )
         )
         return result.scalar_one_or_none()
@@ -24,7 +23,7 @@ class CoverageReportRepository:
     async def upsert(
         self,
         project_id: UUID,
-        group_id: UUID,
+        requirement_id: UUID,
         content: dict | list,
         *,
         coverage_score: int | None = None,
@@ -32,11 +31,11 @@ class CoverageReportRepository:
         input_tokens: int | None = None,
         output_tokens: int | None = None,
     ) -> CoverageReport:
-        report = await self.get_by_project_group(project_id, group_id)
+        report = await self.get_by_requirement_id(requirement_id)
         if report is None:
             report = CoverageReport(
                 project_id=project_id,
-                group_id=group_id,
+                requirement_id=requirement_id,
                 content=content,
                 coverage_score=coverage_score,
                 model=model,

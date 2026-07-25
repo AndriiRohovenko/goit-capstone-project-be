@@ -6,19 +6,20 @@ from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.ai.client import OpenAIClient
-from src.ai.prompts import build_coverage_prompts
+from src.ai.prompts import COVERAGE_ARTIFACT_TYPES, build_coverage_prompts
 from src.ai.schemas import parse_coverage_analysis
 from src.db.configurations import get_db_session
 from src.exceptions import (
     ArtifactGenerationFailedError,
+    ArtifactsRequiredForCoverageError,
     CoverageReportNotFoundError,
     ProjectNotFoundError,
-    RequirementGroupNotFoundError,
+    RequirementNotFoundError,
 )
+from src.repository.artifacts import ArtifactRepository
 from src.repository.coverage_reports import CoverageReportRepository
 from src.repository.project_context import ProjectContextRepository
 from src.repository.projects import ProjectRepository
-from src.repository.requirement_groups import RequirementGroupRepository
 from src.repository.requirements import RequirementRepository
 from src.schemas.auth import UserSchema
 from src.schemas.coverage import CoverageReportResponse
@@ -29,48 +30,58 @@ class CoverageService:
     def __init__(
         self,
         project_repository: ProjectRepository,
-        group_repository: RequirementGroupRepository,
         requirement_repository: RequirementRepository,
+        artifact_repository: ArtifactRepository,
         context_repository: ProjectContextRepository,
         coverage_repository: CoverageReportRepository,
         openai_client: OpenAIClient,
         user: UserSchema,
     ):
         self.project_repository = project_repository
-        self.group_repository = group_repository
         self.requirement_repository = requirement_repository
+        self.artifact_repository = artifact_repository
         self.context_repository = context_repository
         self.coverage_repository = coverage_repository
         self.openai_client = openai_client
         self.user = user
 
-    async def _require_owned_project(self, project_id: UUID):
+    async def _require_owned_requirement(
+        self, project_id: UUID, requirement_id: UUID
+    ):
         project = await self.project_repository.get_project_by_id(
             project_id, self.user.id
         )
         if not project:
             raise ProjectNotFoundError
-        return project
 
-    async def _require_owned_group(self, group_id: UUID):
-        group = await self.group_repository.get_by_id(group_id, self.user.id)
-        if not group:
-            raise RequirementGroupNotFoundError
-        return group
+        requirement = await self.requirement_repository.get_by_id(
+            requirement_id, project_id
+        )
+        if not requirement:
+            raise RequirementNotFoundError
+        return requirement
 
     async def analyze(
-        self, project_id: UUID, group_id: UUID
+        self, project_id: UUID, requirement_id: UUID
     ) -> CoverageReportResponse:
-        await self._require_owned_project(project_id)
-        group = await self._require_owned_group(group_id)
-
-        requirements = (
-            await self.requirement_repository.get_all_by_project_and_group(
-                project_id, group_id
-            )
+        requirement = await self._require_owned_requirement(
+            project_id, requirement_id
         )
+        artifacts = await self.artifact_repository.get_all_by_requirement(
+            requirement_id
+        )
+        test_artifacts = [
+            artifact
+            for artifact in artifacts
+            if artifact.artifact_type in COVERAGE_ARTIFACT_TYPES
+        ]
+        if not test_artifacts:
+            raise ArtifactsRequiredForCoverageError
+
         context = await self.context_repository.get_by_project_id(project_id)
-        system, user = build_coverage_prompts(group, requirements, context)
+        system, user = build_coverage_prompts(
+            requirement, test_artifacts, context
+        )
 
         try:
             result = await self.openai_client.generate_json(system, user)
@@ -81,7 +92,7 @@ class CoverageService:
 
         report = await self.coverage_repository.upsert(
             project_id,
-            group_id,
+            requirement_id,
             parsed.model_dump(exclude={"coverage_score"}),
             coverage_score=parsed.coverage_score,
             model=result.model,
@@ -90,24 +101,12 @@ class CoverageService:
         )
         return CoverageReportResponse.model_validate(report)
 
-    async def analyze_all(
-        self, project_id: UUID
-    ) -> list[CoverageReportResponse]:
-        await self._require_owned_project(project_id)
-        groups = await self.group_repository.get_all_by_owner(self.user.id)
-
-        reports: list[CoverageReportResponse] = []
-        for group in groups:
-            reports.append(await self.analyze(project_id, group.id))
-        return reports
-
     async def get_report(
-        self, project_id: UUID, group_id: UUID
+        self, project_id: UUID, requirement_id: UUID
     ) -> CoverageReportResponse:
-        await self._require_owned_project(project_id)
-        await self._require_owned_group(group_id)
-        report = await self.coverage_repository.get_by_project_group(
-            project_id, group_id
+        await self._require_owned_requirement(project_id, requirement_id)
+        report = await self.coverage_repository.get_by_requirement_id(
+            requirement_id
         )
         if not report:
             raise CoverageReportNotFoundError
@@ -120,8 +119,8 @@ def get_coverage_service(
 ) -> CoverageService:
     return CoverageService(
         ProjectRepository(db),
-        RequirementGroupRepository(db),
         RequirementRepository(db),
+        ArtifactRepository(db),
         ProjectContextRepository(db),
         CoverageReportRepository(db),
         OpenAIClient(),

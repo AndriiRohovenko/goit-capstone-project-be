@@ -17,6 +17,7 @@ from src.api.auth import router as auth_router
 from src.api.exceptions import (
     ArtifactGenerationFailedError,
     ArtifactNotFoundError,
+    ArtifactsRequiredForCoverageError,
     CoverageReportNotFoundError,
     DuplicateEmailError,
     DuplicateRequirementGroupNameError,
@@ -35,6 +36,7 @@ from src.api.exceptions import (
     UserNotFoundError,
     artifact_generation_failed_handler,
     artifact_not_found_handler,
+    artifacts_required_for_coverage_handler,
     coverage_report_not_found_handler,
     duplicate_email_handler,
     duplicate_requirement_group_name_handler,
@@ -115,6 +117,9 @@ app.add_exception_handler(
 )
 app.add_exception_handler(
     CoverageReportNotFoundError, coverage_report_not_found_handler
+)
+app.add_exception_handler(
+    ArtifactsRequiredForCoverageError, artifacts_required_for_coverage_handler
 )
 
 RateLimitExceptionHandler = Callable[[Request, Exception], Response]

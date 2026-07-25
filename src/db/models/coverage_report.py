@@ -12,16 +12,15 @@ from .mixins import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
     from .project import Project
-    from .requirement_group import RequirementGroup
+    from .requirement import Requirement
 
 
 class CoverageReport(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "coverage_reports"
     __table_args__ = (
         UniqueConstraint(
-            "project_id",
-            "group_id",
-            name="uq_coverage_project_group",
+            "requirement_id",
+            name="uq_coverage_requirement",
         ),
     )
 
@@ -30,8 +29,8 @@ class CoverageReport(UUIDMixin, TimestampMixin, Base):
         nullable=False,
         index=True,
     )
-    group_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("requirement_groups.id", ondelete="CASCADE"),
+    requirement_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("requirements.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
@@ -42,4 +41,4 @@ class CoverageReport(UUIDMixin, TimestampMixin, Base):
     output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     project: Mapped[Project] = relationship()
-    group: Mapped[RequirementGroup] = relationship(back_populates="coverage_reports")
+    requirement: Mapped[Requirement] = relationship(back_populates="coverage_report")

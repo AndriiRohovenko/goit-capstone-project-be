@@ -64,34 +64,41 @@ def parse_test_generation(
 
 class CoveredArea(BaseModel):
     area: str
-    requirement_ids: list[str] = Field(default_factory=list)
+    artifact_refs: list[str] = Field(default_factory=list)
 
 
 class PartialArea(BaseModel):
     area: str
     note: str | None = None
-    requirement_ids: list[str] = Field(default_factory=list)
+    artifact_refs: list[str] = Field(default_factory=list)
 
 
-class SuggestedRequirement(BaseModel):
+class SuggestedArtifact(BaseModel):
+    artifact_type: str = "test_cases"
     title: str
-    description: str = ""
-    acceptance_criteria: list[str] = Field(default_factory=list)
-    requirement_type: str = "feature"
-    priority: str = "medium"
+    steps_or_items: list[str] = Field(default_factory=list)
+    expected_result: str = ""
 
 
-class MissingArea(BaseModel):
+class MissingScenario(BaseModel):
     area: str
     risk: str = "medium"
-    suggested_requirement: SuggestedRequirement | None = None
+    scenario_type: str = "functional"
+    suggested_artifact: SuggestedArtifact | None = None
+
+
+class CoverageRecommendation(BaseModel):
+    category: str = "other"
+    priority: str = "medium"
+    text: str
 
 
 class CoverageAnalysisLLMResponse(BaseModel):
     coverage_score: int | None = None
     covered_areas: list[CoveredArea] = Field(default_factory=list)
     partial_areas: list[PartialArea] = Field(default_factory=list)
-    missing_areas: list[MissingArea] = Field(default_factory=list)
+    missing_scenarios: list[MissingScenario] = Field(default_factory=list)
+    recommendations: list[CoverageRecommendation] = Field(default_factory=list)
 
 
 def parse_coverage_analysis(
