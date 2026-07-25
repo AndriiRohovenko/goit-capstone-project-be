@@ -13,6 +13,7 @@ from .mixins import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
     from .requirement import Requirement
+    from .requirement_group import RequirementGroup
     from .user import User
 
 
@@ -38,6 +39,10 @@ class Project(UUIDMixin, TimestampMixin, Base):
         back_populates="project",
         cascade="all, delete-orphan",
         uselist=False,
+    )
+    requirement_groups: Mapped[list[RequirementGroup]] = relationship(
+        back_populates="project",
+        cascade="all, delete-orphan",
     )
     requirements: Mapped[list[Requirement]] = relationship(
         back_populates="project",

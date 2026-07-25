@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db.models import Requirement, RequirementGroup
+from src.db.models import Requirement
 from src.schemas.requirements import RequirementCreate, RequirementUpdate
 
 
@@ -41,15 +41,28 @@ class RequirementRepository:
         return result.scalar_one_or_none()
 
     async def get_all_by_project(
-        self, project_id: UUID, group_name: str | None = None
+        self,
+        project_id: UUID,
+        group_id: UUID | None = None,
     ) -> list[Requirement]:
         query = select(Requirement).filter(Requirement.project_id == project_id)
-        if group_name is not None:
-            query = query.join(Requirement.group).filter(
-                RequirementGroup.name == group_name
-            )
+        if group_id is not None:
+            query = query.filter(Requirement.group_id == group_id)
         result = await self.db.execute(
             query.order_by(Requirement.created_at.desc())
+        )
+        return list(result.scalars().all())
+
+    async def get_all_by_project_and_group(
+        self, project_id: UUID, group_id: UUID
+    ) -> list[Requirement]:
+        result = await self.db.execute(
+            select(Requirement)
+            .filter(
+                Requirement.project_id == project_id,
+                Requirement.group_id == group_id,
+            )
+            .order_by(Requirement.created_at.desc())
         )
         return list(result.scalars().all())
 

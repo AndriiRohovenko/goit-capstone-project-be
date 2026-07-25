@@ -62,6 +62,54 @@ def parse_test_generation(
     return results
 
 
+class CoveredArea(BaseModel):
+    area: str
+    artifact_refs: list[str] = Field(default_factory=list)
+
+
+class PartialArea(BaseModel):
+    area: str
+    note: str | None = None
+    artifact_refs: list[str] = Field(default_factory=list)
+
+
+class SuggestedArtifact(BaseModel):
+    artifact_type: str = "test_cases"
+    title: str
+    steps_or_items: list[str] = Field(default_factory=list)
+    expected_result: str = ""
+
+
+class MissingScenario(BaseModel):
+    area: str
+    risk: str = "medium"
+    scenario_type: str = "functional"
+    suggested_artifact: SuggestedArtifact | None = None
+
+
+class CoverageRecommendation(BaseModel):
+    category: str = "other"
+    priority: str = "medium"
+    text: str
+
+
+class CoverageAnalysisLLMResponse(BaseModel):
+    coverage_score: int | None = None
+    covered_areas: list[CoveredArea] = Field(default_factory=list)
+    partial_areas: list[PartialArea] = Field(default_factory=list)
+    missing_scenarios: list[MissingScenario] = Field(default_factory=list)
+    recommendations: list[CoverageRecommendation] = Field(default_factory=list)
+
+
+def parse_coverage_analysis(
+    payload: dict[str, Any],
+) -> CoverageAnalysisLLMResponse:
+    parsed = CoverageAnalysisLLMResponse.model_validate(payload)
+    if parsed.coverage_score is not None:
+        parsed.coverage_score = max(0, min(100, parsed.coverage_score))
+    return parsed
+
+
 def parse_single_artifact(
     payload: dict[str, Any],
     expected_type: ArtifactType,

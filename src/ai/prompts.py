@@ -6,10 +6,17 @@ from typing import TYPE_CHECKING
 from src.db.models.enums import ArtifactType, GenerationType
 
 if TYPE_CHECKING:
-    from src.db.models import ProjectContext, Requirement
+    from src.db.models import GeneratedArtifact, ProjectContext, Requirement
 
 REGENERATABLE_ARTIFACT_TYPES = {
     ArtifactType.REQUIREMENT_REVIEW,
+    ArtifactType.TEST_CASES,
+    ArtifactType.CHECKLIST,
+    ArtifactType.NEGATIVE_SCENARIOS,
+    ArtifactType.EDGE_CASES,
+}
+
+COVERAGE_ARTIFACT_TYPES = {
     ArtifactType.TEST_CASES,
     ArtifactType.CHECKLIST,
     ArtifactType.NEGATIVE_SCENARIOS,
@@ -106,6 +113,87 @@ def build_prompts(
         return system, user
 
     raise ValueError(f"unsupported generation_type: {generation_type}")
+
+
+def _artifact_payload(artifact: GeneratedArtifact) -> dict:
+    return {
+        "artifact_type": artifact.artifact_type,
+        "content": artifact.content,
+        "is_edited": artifact.is_edited,
+    }
+
+
+def build_coverage_payload(
+    requirement: Requirement,
+    artifacts: list[GeneratedArtifact],
+    context: ProjectContext | None,
+) -> dict:
+    return {
+        "requirement": {
+            "id": str(requirement.id),
+            **_requirement_payload(requirement),
+        },
+        "artifacts": [_artifact_payload(artifact) for artifact in artifacts],
+        "project_context": _context_payload(context),
+    }
+
+
+def build_coverage_prompts(
+    requirement: Requirement,
+    artifacts: list[GeneratedArtifact],
+    context: ProjectContext | None,
+) -> tuple[str, str]:
+    payload = build_coverage_payload(requirement, artifacts, context)
+    user = (
+        "Analyze how well the generated test design artifacts cover the "
+        "requirement below (including acceptance criteria and business rules). "
+        "Identify covered, partially covered, and missing scenarios. "
+        "Respond with JSON only.\n\n"
+        f"{json.dumps(payload, default=str, indent=2)}"
+    )
+    system = (
+        "You are a senior QA analyst assessing test coverage of a single "
+        "software requirement based on its generated test artifacts. "
+        "Compare the requirement against the provided artifacts "
+        "(test_cases, checklist, negative_scenarios, edge_cases). "
+        "Return a single JSON object with this shape:\n"
+        "{\n"
+        '  "coverage_score": number (0-100),\n'
+        '  "covered_areas": [\n'
+        '    { "area": string, "artifact_refs": [string] }\n'
+        "  ],\n"
+        '  "partial_areas": [\n'
+        '    { "area": string, "note": string, "artifact_refs": [string] }\n'
+        "  ],\n"
+        '  "missing_scenarios": [\n'
+        "    {\n"
+        '      "area": string,\n'
+        '      "risk": "low" | "medium" | "high",\n'
+        '      "scenario_type": "negative" | "edge" | "security" | '
+        '"accessibility" | "functional" | "other",\n'
+        '      "suggested_artifact": {\n'
+        '        "artifact_type": "test_cases" | "checklist" | '
+        '"negative_scenarios" | "edge_cases",\n'
+        '        "title": string,\n'
+        '        "steps_or_items": [string],\n'
+        '        "expected_result": string\n'
+        "      }\n"
+        "    }\n"
+        "  ],\n"
+        '  "recommendations": [\n'
+        "    {\n"
+        '      "category": "missing_edge_cases" | "automation_priority" | '
+        '"risk" | "requirement_quality" | "other",\n'
+        '      "priority": "low" | "medium" | "high",\n'
+        '      "text": string\n'
+        "    }\n"
+        "  ]\n"
+        "}\n"
+        "coverage_score reflects how completely the artifacts cover the "
+        "requirement. artifact_refs should reference provided artifacts "
+        '(e.g. "test_cases#0"). Be concrete and actionable.'
+    )
+    return system, user
 
 
 def build_regenerate_prompts(

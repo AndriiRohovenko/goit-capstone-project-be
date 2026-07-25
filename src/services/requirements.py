@@ -41,8 +41,10 @@ class RequirementService:
         if not project:
             raise ProjectNotFoundError
 
-    async def _require_owned_group(self, group_id: UUID) -> None:
-        group = await self.group_repository.get_by_id(group_id, self.user.id)
+    async def _require_project_group(
+        self, project_id: UUID, group_id: UUID
+    ) -> None:
+        group = await self.group_repository.get_by_id(group_id, project_id)
         if not group:
             raise RequirementGroupNotFoundError
 
@@ -50,16 +52,18 @@ class RequirementService:
         self, project_id: UUID, data: RequirementCreate
     ) -> RequirementResponse:
         await self._require_owned_project(project_id)
-        await self._require_owned_group(data.group_id)
+        await self._require_project_group(project_id, data.group_id)
         requirement = await self.requirement_repository.create(project_id, data)
         return RequirementResponse.model_validate(requirement)
 
     async def get_all_requirements(
-        self, project_id: UUID, group_name: str | None = None
+        self, project_id: UUID, group_id: UUID | None = None
     ) -> list[RequirementResponse]:
         await self._require_owned_project(project_id)
+        if group_id is not None:
+            await self._require_project_group(project_id, group_id)
         requirements = await self.requirement_repository.get_all_by_project(
-            project_id, group_name=group_name
+            project_id, group_id=group_id
         )
         return [
             RequirementResponse.model_validate(requirement)
@@ -87,7 +91,7 @@ class RequirementService:
     ) -> RequirementResponse:
         await self._require_owned_project(project_id)
         if data.group_id is not None:
-            await self._require_owned_group(data.group_id)
+            await self._require_project_group(project_id, data.group_id)
         requirement = await self.requirement_repository.get_by_id(
             requirement_id, project_id
         )

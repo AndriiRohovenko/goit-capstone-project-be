@@ -7,6 +7,7 @@ flat ``models.py`` file.
 
 from .artifact import GeneratedArtifact
 from .base import Base
+from .coverage_report import CoverageReport
 from .enums import (
     ArtifactType,
     GenerationType,
@@ -24,6 +25,7 @@ from .user import User
 __all__ = [
     "ArtifactType",
     "Base",
+    "CoverageReport",
     "GeneratedArtifact",
     "GenerationType",
     "Project",
