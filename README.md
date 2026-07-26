@@ -1,4 +1,4 @@
-# GoIt PythonWeb HW-10
+# GoIt BE Capstone Project
 
 A REST API project built with **FastAPI**, **PostgreSQL**, and **Docker Compose**, managed using **Poetry**.
 
