@@ -9,6 +9,7 @@ from src.ai.client import OpenAIClient
 from src.ai.prompts import COVERAGE_ARTIFACT_TYPES, build_coverage_prompts
 from src.ai.schemas import parse_coverage_analysis
 from src.db.configurations import get_db_session
+from src.db.models import Requirement
 from src.exceptions import (
     ArtifactGenerationFailedError,
     ArtifactsRequiredForCoverageError,
@@ -61,6 +62,16 @@ class CoverageService:
             raise RequirementNotFoundError
         return requirement
 
+    async def _sibling_requirements(
+        self, project_id: UUID, requirement: Requirement
+    ) -> list[Requirement]:
+        if requirement.group_id is None:
+            return []
+        group_reqs = await self.requirement_repository.get_all_by_project_and_group(
+            project_id, requirement.group_id
+        )
+        return [r for r in group_reqs if r.id != requirement.id][:20]
+
     async def analyze(
         self, project_id: UUID, requirement_id: UUID
     ) -> CoverageReportResponse:
@@ -79,8 +90,9 @@ class CoverageService:
             raise ArtifactsRequiredForCoverageError
 
         context = await self.context_repository.get_by_project_id(project_id)
+        siblings = await self._sibling_requirements(project_id, requirement)
         system, user = build_coverage_prompts(
-            requirement, test_artifacts, context
+            requirement, test_artifacts, context, siblings
         )
 
         try:
