@@ -17,6 +17,7 @@ from src.ai.schemas import (
     parse_test_generation,
 )
 from src.db.configurations import get_db_session
+from src.db.models import Requirement
 from src.db.models.enums import ArtifactType, GenerationType
 from src.exceptions import (
     ArtifactGenerationFailedError,
@@ -71,6 +72,16 @@ class ArtifactService:
             raise RequirementNotFoundError
         return requirement
 
+    async def _sibling_requirements(
+        self, project_id: UUID, requirement: Requirement
+    ) -> list[Requirement]:
+        if requirement.group_id is None:
+            return []
+        group_reqs = await self.requirement_repository.get_all_by_project_and_group(
+            project_id, requirement.group_id
+        )
+        return [r for r in group_reqs if r.id != requirement.id][:20]
+
     async def generate(
         self,
         project_id: UUID,
@@ -88,7 +99,10 @@ class ArtifactService:
             raise UnsupportedGenerationTypeError
 
         context = await self.context_repository.get_by_project_id(project_id)
-        system, user = build_prompts(generation_type, requirement, context)
+        siblings = await self._sibling_requirements(project_id, requirement)
+        system, user = build_prompts(
+            generation_type, requirement, context, siblings
+        )
 
         try:
             result = await self.openai_client.generate_json(system, user)
@@ -169,8 +183,9 @@ class ArtifactService:
             project_id, requirement_id
         )
         context = await self.context_repository.get_by_project_id(project_id)
+        siblings = await self._sibling_requirements(project_id, requirement)
         system, user = build_regenerate_prompts(
-            artifact_type, requirement, context
+            artifact_type, requirement, context, siblings
         )
 
         try:
