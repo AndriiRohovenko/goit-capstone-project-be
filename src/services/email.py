@@ -22,12 +22,15 @@ conf = ConnectionConfig(
 
 async def send_verification_email(email: EmailStr, access_token: str, user_info: dict):
     fullname = f"{user_info.name} {user_info.surname}"
+    frontend_base = config.FRONTEND_URL.rstrip("/")
     message = MessageSchema(
         subject="Verify your email",
         recipients=[email],
         template_body={
             "fullname": fullname,
-            "verification_link": f"{config.API_URL}/auth/verify-email?token={access_token}",
+            "verification_link": (
+                f"{frontend_base}/verify-email?token={access_token}"
+            ),
         },
         subtype=MessageType.html,
     )

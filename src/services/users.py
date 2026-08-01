@@ -22,7 +22,7 @@ class UserService:
             raise UserNotFoundError
         return user.refresh_token
 
-    async def update_refresh_token(self, user: User, refresh_token: str):
+    async def update_refresh_token(self, user: User, refresh_token: str | None):
         user = await self.repo.get_by_id(user.id)
         if not user:
             raise UserNotFoundError

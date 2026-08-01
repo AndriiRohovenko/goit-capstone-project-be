@@ -8,7 +8,7 @@ from src.schemas.auth import (
     UserCreate,
     UserSchema,
 )
-from src.services.auth import AuthService, get_auth_service
+from src.services.auth import AuthService, get_auth_service, get_current_user
 from src.services.email import send_verification_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -44,13 +44,21 @@ async def refresh_token(
     return await auth_service.refresh(body.refresh_token)
 
 
-@router.get("/verify-email", status_code=status.HTTP_200_OK)
+@router.post("/logout", status_code=status.HTTP_200_OK)
+async def logout(
+    auth_service: AuthService = Depends(get_auth_service),
+    current_user: UserSchema = Depends(get_current_user),
+):
+    await auth_service.logout(current_user)
+    return {"detail": "Logged out successfully"}
+
+
+@router.get("/verify-email", response_model=Token, status_code=status.HTTP_200_OK)
 async def verify_email(
     token: str,
     auth_service: AuthService = Depends(get_auth_service),
 ):
-    await auth_service.verify_email(token)
-    return {"detail": "Email verified successfully"}
+    return await auth_service.verify_email(token)
 
 
 @router.post("/reset-password", status_code=status.HTTP_200_OK)

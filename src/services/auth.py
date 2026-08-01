@@ -47,13 +47,7 @@ class AuthService:
             expires_delta=24 * config.JWT_EXPIRATION_SECONDS,
         )
 
-    async def login(self, email: str, password: str) -> dict:
-        user = await self.users.get_user_by_email(email)
-        if not user or not self.hash.verify_password(password, user.hashed_password):
-            raise InvalidCredentialsError
-        if not user.is_verified:
-            raise EmailNotVerifiedError
-
+    async def _issue_tokens(self, user: User) -> dict:
         access_token = await create_access_token(data={"sub": user.email})
         refresh_token = await create_access_token(
             data={"sub": user.email},
@@ -65,6 +59,14 @@ class AuthService:
             "refresh_token": refresh_token,
             "token_type": "bearer",
         }
+
+    async def login(self, email: str, password: str) -> dict:
+        user = await self.users.get_user_by_email(email)
+        if not user or not self.hash.verify_password(password, user.hashed_password):
+            raise InvalidCredentialsError
+        if not user.is_verified:
+            raise EmailNotVerifiedError
+        return await self._issue_tokens(user)
 
     async def refresh(self, refresh_token: str | None) -> dict:
         if not refresh_token:
@@ -85,13 +87,20 @@ class AuthService:
             "token_type": "bearer",
         }
 
-    async def verify_email(self, token: str) -> None:
+    async def logout(self, user: UserSchema) -> None:
+        db_user = await self.users.get_user_by_email(user.email)
+        if not db_user:
+            raise UserNotFoundError
+        await self.users.update_refresh_token(db_user, None)
+
+    async def verify_email(self, token: str) -> dict:
         user = await self.users.get_user_by_email_verification_token(token)
         if not user:
             raise UserNotFoundError
         if user.is_verified:
             raise EmailAlreadyVerifiedError
         await self.users.verify_email(user)
+        return await self._issue_tokens(user)
 
     async def reset_password(self, body: ResetPasswordRequest) -> None:
         user = await self.users.get_user_by_email(body.email)

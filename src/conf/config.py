@@ -14,6 +14,7 @@ class BaseConfig(BaseSettings):
     API_HOST: str
     API_PORT: int
     API_URL: str
+    FRONTEND_URL: str
 
     DB_HOST: str
     DB_PORT: int

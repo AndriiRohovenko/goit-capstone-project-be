@@ -14,7 +14,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/me", response_model=UserSchema)
-@limiter.limit("5/minute")
+# @limiter.limit("5/minute")
 async def me(request: Request, user: UserSchema = Depends(get_current_user)):
     cache_key = f"user:{user.id}"
     try:
