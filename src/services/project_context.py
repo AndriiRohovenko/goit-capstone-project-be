@@ -11,7 +11,6 @@ from src.schemas.auth import UserSchema
 from src.schemas.project_context import (
     ProjectContextResponse,
     ProjectContextUpdate,
-    ProjectContextUpsert,
 )
 from src.services.auth import get_current_user
 
@@ -40,20 +39,6 @@ class ProjectContextService:
         if not context:
             raise ProjectContextNotFoundError
         return ProjectContextResponse.model_validate(context)
-
-    async def upsert_context(
-        self, project_id: UUID, data: ProjectContextUpsert
-    ) -> ProjectContextResponse:
-        await self._require_owned_project(project_id)
-        context = await self.context_repository.get_by_project_id(project_id)
-        if context:
-            updated = await self.context_repository.update(
-                context, data, partial=False
-            )
-            return ProjectContextResponse.model_validate(updated)
-
-        created = await self.context_repository.create(project_id, data)
-        return ProjectContextResponse.model_validate(created)
 
     async def patch_context(
         self, project_id: UUID, data: ProjectContextUpdate

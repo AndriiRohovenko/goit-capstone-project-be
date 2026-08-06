@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, status
 from src.schemas.project_context import (
     ProjectContextResponse,
     ProjectContextUpdate,
-    ProjectContextUpsert,
 )
 from src.schemas.projects import ProjectCreate, ProjectResponse, ProjectUpdate
 from src.services.project_context import (
@@ -38,15 +37,6 @@ async def get_project_context(
     context_service: ProjectContextService = Depends(get_project_context_service),
 ):
     return await context_service.get_context(project_id)
-
-
-@router.put("/{project_id}/context", response_model=ProjectContextResponse)
-async def upsert_project_context(
-    project_id: UUID,
-    body: ProjectContextUpsert,
-    context_service: ProjectContextService = Depends(get_project_context_service),
-):
-    return await context_service.upsert_context(project_id, body)
 
 
 @router.patch("/{project_id}/context", response_model=ProjectContextResponse)

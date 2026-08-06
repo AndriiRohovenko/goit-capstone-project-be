@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db.models import Project
+from src.db.models import Project, ProjectContext
 from src.schemas.projects import ProjectCreate, ProjectUpdate
 
 
@@ -17,7 +17,9 @@ class ProjectRepository:
             description=data.description,
             owner_id=owner_id,
         )
+        context = ProjectContext(project=project)
         self.db.add(project)
+        self.db.add(context)
         await self.db.commit()
         await self.db.refresh(project)
         return project
