@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 
 from src.schemas.requirements import (
+    PaginatedRequirementsResponse,
     RequirementCreate,
     RequirementResponse,
     RequirementUpdate,
@@ -27,15 +28,17 @@ async def create_requirement(
 
 @router.get(
     "/{project_id}/requirements",
-    response_model=list[RequirementResponse],
+    response_model=PaginatedRequirementsResponse,
 )
 async def get_all_requirements(
     project_id: UUID,
     group_id: UUID | None = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
     requirement_service: RequirementService = Depends(get_requirement_service),
 ):
     return await requirement_service.get_all_requirements(
-        project_id, group_id=group_id
+        project_id, group_id=group_id, page=page, limit=limit
     )
 
 
@@ -48,9 +51,7 @@ async def get_requirement_by_id(
     requirement_id: UUID,
     requirement_service: RequirementService = Depends(get_requirement_service),
 ):
-    return await requirement_service.get_requirement_by_id(
-        project_id, requirement_id
-    )
+    return await requirement_service.get_requirement_by_id(project_id, requirement_id)
 
 
 @router.put(

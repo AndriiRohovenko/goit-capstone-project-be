@@ -14,6 +14,7 @@ from src.repository.requirement_groups import RequirementGroupRepository
 from src.repository.requirements import RequirementRepository
 from src.schemas.auth import UserSchema
 from src.schemas.requirements import (
+    PaginatedRequirementsResponse,
     RequirementCreate,
     RequirementResponse,
     RequirementUpdate,
@@ -41,9 +42,7 @@ class RequirementService:
         if not project:
             raise ProjectNotFoundError
 
-    async def _require_project_group(
-        self, project_id: UUID, group_id: UUID
-    ) -> None:
+    async def _require_project_group(self, project_id: UUID, group_id: UUID) -> None:
         group = await self.group_repository.get_by_id(group_id, project_id)
         if not group:
             raise RequirementGroupNotFoundError
@@ -57,18 +56,27 @@ class RequirementService:
         return RequirementResponse.model_validate(requirement)
 
     async def get_all_requirements(
-        self, project_id: UUID, group_id: UUID | None = None
-    ) -> list[RequirementResponse]:
+        self,
+        project_id: UUID,
+        group_id: UUID | None = None,
+        page: int = 1,
+        limit: int = 20,
+    ) -> PaginatedRequirementsResponse:
         await self._require_owned_project(project_id)
         if group_id is not None:
             await self._require_project_group(project_id, group_id)
-        requirements = await self.requirement_repository.get_all_by_project(
-            project_id, group_id=group_id
+        offset = (page - 1) * limit
+        requirements, total = await self.requirement_repository.get_all_by_project(
+            project_id, group_id=group_id, limit=limit, offset=offset
         )
-        return [
-            RequirementResponse.model_validate(requirement)
-            for requirement in requirements
-        ]
+        pages = (total + limit - 1) // limit
+        return PaginatedRequirementsResponse(
+            items=[RequirementResponse.model_validate(r) for r in requirements],
+            total=total,
+            page=page,
+            limit=limit,
+            pages=pages,
+        )
 
     async def get_requirement_by_id(
         self,
@@ -100,9 +108,7 @@ class RequirementService:
         updated = await self.requirement_repository.update(requirement, data)
         return RequirementResponse.model_validate(updated)
 
-    async def delete_requirement(
-        self, project_id: UUID, requirement_id: UUID
-    ) -> None:
+    async def delete_requirement(self, project_id: UUID, requirement_id: UUID) -> None:
         await self._require_owned_project(project_id)
         requirement = await self.requirement_repository.get_by_id(
             requirement_id, project_id

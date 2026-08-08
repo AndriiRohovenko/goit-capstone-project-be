@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.models import Requirement
@@ -17,9 +17,7 @@ class RequirementRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create(
-        self, project_id: UUID, data: RequirementCreate
-    ) -> Requirement:
+    async def create(self, project_id: UUID, data: RequirementCreate) -> Requirement:
         payload = _payload_for_orm(data.model_dump())
         requirement = Requirement(project_id=project_id, **payload)
         self.db.add(requirement)
@@ -44,14 +42,22 @@ class RequirementRepository:
         self,
         project_id: UUID,
         group_id: UUID | None = None,
-    ) -> list[Requirement]:
+        limit: int = 20,
+        offset: int = 0,
+    ) -> tuple[list[Requirement], int]:
         query = select(Requirement).filter(Requirement.project_id == project_id)
         if group_id is not None:
             query = query.filter(Requirement.group_id == group_id)
-        result = await self.db.execute(
-            query.order_by(Requirement.created_at.desc())
+
+        count_result = await self.db.execute(
+            select(func.count()).select_from(query.subquery())
         )
-        return list(result.scalars().all())
+        total = count_result.scalar_one()
+
+        result = await self.db.execute(
+            query.order_by(Requirement.created_at.desc()).offset(offset).limit(limit)
+        )
+        return list(result.scalars().all()), total
 
     async def get_all_by_project_and_group(
         self, project_id: UUID, group_id: UUID

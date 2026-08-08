@@ -50,3 +50,11 @@ class RequirementResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PaginatedRequirementsResponse(BaseModel):
+    items: list[RequirementResponse]
+    total: int
+    page: int
+    limit: int
+    pages: int
