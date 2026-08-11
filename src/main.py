@@ -62,12 +62,13 @@ from src.api.requirement_groups import router as requirement_groups_router
 from src.api.artifacts import router as artifacts_router
 from src.api.coverage import router as coverage_router
 from src.conf.limiter import limiter
+
 app = FastAPI()
 app.state.limiter = limiter
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=["http://localhost:3000", "http://localhost:5002"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -97,7 +98,9 @@ app.add_exception_handler(InvalidRefreshTokenError, invalid_refresh_token_handle
 app.add_exception_handler(EmailAlreadyVerifiedError, email_already_verified_handler)
 app.add_exception_handler(IncorrectPasswordError, incorrect_password_handler)
 app.add_exception_handler(ProjectNotFoundError, project_not_found_handler)
-app.add_exception_handler(ProjectContextNotFoundError, project_context_not_found_handler)
+app.add_exception_handler(
+    ProjectContextNotFoundError, project_context_not_found_handler
+)
 app.add_exception_handler(RequirementNotFoundError, requirement_not_found_handler)
 app.add_exception_handler(
     RequirementGroupNotFoundError, requirement_group_not_found_handler
