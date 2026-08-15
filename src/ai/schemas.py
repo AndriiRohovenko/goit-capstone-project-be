@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -62,15 +62,10 @@ def parse_test_generation(
     return results
 
 
-class CoveredArea(BaseModel):
-    area: str
-    artifact_refs: list[str] = Field(default_factory=list)
-
-
-class PartialArea(BaseModel):
-    area: str
-    note: str | None = None
-    artifact_refs: list[str] = Field(default_factory=list)
+class CoverageSummary(BaseModel):
+    verdict: str
+    note: str
+    next_action: str
 
 
 class SuggestedArtifact(BaseModel):
@@ -88,17 +83,17 @@ class MissingScenario(BaseModel):
 
 
 class CoverageRecommendation(BaseModel):
-    category: str = "other"
-    priority: str = "medium"
-    text: str
+    target: Literal["requirement", "project_context", "artifacts", "other"]
+    change: str
+    why: str
+    impact: str | None = None
 
 
 class CoverageAnalysisLLMResponse(BaseModel):
     coverage_score: int | None = None
-    covered_areas: list[CoveredArea] = Field(default_factory=list)
-    partial_areas: list[PartialArea] = Field(default_factory=list)
-    missing_scenarios: list[MissingScenario] = Field(default_factory=list)
+    summary: CoverageSummary | None = None
     recommendations: list[CoverageRecommendation] = Field(default_factory=list)
+    missing_scenarios: list[MissingScenario] = Field(default_factory=list)
 
 
 def parse_coverage_analysis(
