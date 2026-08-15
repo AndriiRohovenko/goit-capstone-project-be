@@ -37,6 +37,14 @@ COVERAGE_SIBLING_INSTRUCTION = (
     "sibling, note that under recommendations without changing the score."
 )
 
+QA_COVERAGE_GUIDANCE = (
+    "Write the report for a QA engineer who needs the fastest path to "
+    "improving coverage on the next iteration. Use business and user-facing "
+    "language instead of internal labels. Recommend concrete updates to the "
+    "requirement or project context that will improve the next generated "
+    "artifacts."
+)
+
 
 def _requirement_payload(requirement: Requirement) -> dict:
     return {
@@ -184,7 +192,9 @@ def build_coverage_prompts(
     user = (
         "Analyze how well the generated test design artifacts cover the "
         "requirement below (including acceptance criteria and business rules). "
-        "Identify covered, partially covered, and missing scenarios. "
+        "Focus on improving the requirement, project context, and generated "
+        "artifacts on the next iteration. Keep the report short and action-"
+        "oriented. "
         "Respond with JSON only.\n\n"
         f"{json.dumps(payload, default=str, indent=2)}"
     )
@@ -194,14 +204,26 @@ def build_coverage_prompts(
         "Compare the requirement against the provided artifacts "
         "(test_cases, checklist, negative_scenarios, edge_cases). "
         f"{COVERAGE_SIBLING_INSTRUCTION} "
+        f"{QA_COVERAGE_GUIDANCE} "
+        "Do not produce detailed covered-area or partial-area breakdowns. "
+        "Write a short summary and only the most useful recommendations for "
+        "how the user should update the requirement or project context before "
+        "regenerating artifacts. "
         "Return a single JSON object with this shape:\n"
         "{\n"
         '  "coverage_score": number (0-100),\n'
-        '  "covered_areas": [\n'
-        '    { "area": string, "artifact_refs": [string] }\n'
-        "  ],\n"
-        '  "partial_areas": [\n'
-        '    { "area": string, "note": string, "artifact_refs": [string] }\n'
+        '  "summary": {\n'
+        '    "verdict": string,\n'
+        '    "note": string,\n'
+        '    "next_action": string\n'
+        "  },\n"
+        '  "recommendations": [\n'
+        "    {\n"
+        '      "target": "requirement" | "project_context" | "artifacts" | "other",\n'
+        '      "change": string,\n'
+        '      "why": string,\n'
+        '      "impact": string | null\n'
+        "    }\n"
         "  ],\n"
         '  "missing_scenarios": [\n'
         "    {\n"
@@ -228,8 +250,9 @@ def build_coverage_prompts(
         "  ]\n"
         "}\n"
         "coverage_score reflects how completely the artifacts cover the "
-        "requirement. artifact_refs should reference provided artifacts "
-        '(e.g. "test_cases#0"). Be concrete and actionable.'
+        "requirement. Limit missing_scenarios to the few items that most "
+        "directly affect the next regeneration step. Be concrete, readable, "
+        "and actionable."
     )
     return system, user
 
