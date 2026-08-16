@@ -62,12 +62,17 @@ from src.api.requirement_groups import router as requirement_groups_router
 from src.api.artifacts import router as artifacts_router
 from src.api.coverage import router as coverage_router
 from src.conf.limiter import limiter
+from src.conf.config import config
 
 app = FastAPI()
 app.state.limiter = limiter
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5002"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5002",
+        config.FRONTEND_URL,
+    ],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

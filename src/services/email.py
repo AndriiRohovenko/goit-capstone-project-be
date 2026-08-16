@@ -1,41 +1,38 @@
 from pathlib import Path
 
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
-from fastapi_mail.errors import ConnectionErrors
-from pydantic import EmailStr
+from jinja2 import Template
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
 from src.conf.config import config
 
-conf = ConnectionConfig(
-    MAIL_USERNAME=config.SMTP_USER,
-    MAIL_PASSWORD=config.SMTP_PASSWORD,
-    MAIL_FROM=config.SMTP_FROM,
-    MAIL_PORT=config.SMTP_PORT,
-    MAIL_SERVER=config.SMTP_HOST,
-    TEMPLATE_FOLDER=Path(__file__).parent.parent / "templates",
-    VALIDATE_CERTS=True,
-    USE_CREDENTIALS=True,
-    MAIL_SSL_TLS=True,
-    MAIL_STARTTLS=False,
-    MAIL_FROM_NAME="REST API Service",
-)
+TEMPLATE_PATH = Path(__file__).parent.parent / "templates" / "email_verification.html"
 
 
-async def send_verification_email(email: EmailStr, access_token: str, user_info: dict):
+def send_verification_email(email: str, access_token: str, user_info):
     fullname = f"{user_info.name} {user_info.surname}"
     frontend_base = config.FRONTEND_URL.rstrip("/")
-    message = MessageSchema(
-        subject="Verify your email",
-        recipients=[email],
-        template_body={
-            "fullname": fullname,
-            "verification_link": (
-                f"{frontend_base}/verify-email?token={access_token}"
-            ),
-        },
-        subtype=MessageType.html,
+    verification_link = f"{frontend_base}/verify-email?token={access_token}"
+    html = Template(TEMPLATE_PATH.read_text(encoding="utf-8")).render(
+        fullname=fullname,
+        verification_link=verification_link,
     )
-    fm = FastMail(conf)
+
+    message = Mail(
+        from_email=config.SENDGRID_FROM,
+        to_emails=str(email),
+        subject="Verify your email",
+        html_content=html,
+    )
+    print(
+        f"[email] sending verification to={email} from={config.SENDGRID_FROM}",
+        flush=True,
+    )
     try:
-        await fm.send_message(message, template_name="email_verification.html")
-    except ConnectionErrors as e:
-        print(f"Failed to send email: {e}")
+        response = SendGridAPIClient(config.SENDGRID_API_KEY).send(message)
+        print(
+            f"[email] sent ok to={email} status={response.status_code}",
+            flush=True,
+        )
+    except Exception as e:
+        print(f"[email] failed to send to={email}: {type(e).__name__}: {e}", flush=True)
