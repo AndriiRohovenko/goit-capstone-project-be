@@ -22,6 +22,7 @@ async def register_user(
 ):
     user = await auth_service.register(body)
     token = await auth_service.create_email_verification_token(body.email)
+    print(f"[email] queued verification for {body.email}", flush=True)
     background_tasks.add_task(
         send_verification_email, body.email, token, user_info=body
     )

@@ -42,12 +42,9 @@ DB_NAME=postgres
 API_HOST=0.0.0.0
 API_PORT=5000
 
-# SMTP Configuration
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=465
-SMTP_USER=your_email@gmail.com
-SMTP_PASSWORD=your_password
-SMTP_FROM=your_email@gmail.com
+# SendGrid (HTTPS email API)
+SENDGRID_API_KEY=your_sendgrid_api_key
+SENDGRID_FROM=your_verified_sender@gmail.com
 
 # JWT Configuration
 JWT_SECRET=your_jwt_secret
@@ -98,8 +95,9 @@ poetry run dev
 `poetry run dev` now prefers `.env.dev` when it exists, so you can keep Docker settings in `.env` and local settings in `.env.dev`.
 
 📬 Email Verification
-The project uses FastAPI-Mail for sending email verification links.
+The project uses the SendGrid HTTP API for sending email verification links (works on Render free instances).
 Email templates are located in the src/templates directory.
+`SENDGRID_FROM` must be a verified Single Sender in SendGrid.
 
 📤 Cloud Image Uploading
 The project supports uploading images to the cloud.

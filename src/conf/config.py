@@ -22,11 +22,8 @@ class BaseConfig(BaseSettings):
     DB_PASSWORD: str
     DB_NAME: str
 
-    SMTP_HOST: str
-    SMTP_PORT: int
-    SMTP_USER: str
-    SMTP_PASSWORD: str
-    SMTP_FROM: str
+    SENDGRID_API_KEY: str
+    SENDGRID_FROM: str
 
     CLOUDINARY_NAME: str
     CLOUDINARY_API_KEY: str
