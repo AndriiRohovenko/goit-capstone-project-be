@@ -32,10 +32,6 @@ class BaseConfig(BaseSettings):
     CLOUDINARY_API_KEY: str
     CLOUDINARY_API_SECRET: str
 
-    REDIS_HOST: str
-    REDIS_PORT: int
-    REDIS_PASSWORD: str
-
     OPENAI_API_KEY: str
     OPENAI_MODEL: str = Field(default="gpt-4o-mini")
 

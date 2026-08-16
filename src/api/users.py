@@ -1,8 +1,6 @@
-from fastapi import APIRouter, Depends, File, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, UploadFile, status
 
 from src.conf.config import config as settings
-from src.conf.limiter import limiter
-from src.redis.instance import cache_get, cache_set, redis_client
 from src.schemas.auth import UserSchema
 from src.schemas.users import UserUploadAvatarResponceSchema
 from src.services.auth import get_current_user
@@ -14,16 +12,9 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/me", response_model=UserSchema)
-# @limiter.limit("5/minute")
-async def me(request: Request, user: UserSchema = Depends(get_current_user)):
-    cache_key = f"user:{user.id}"
+async def me(user: UserSchema = Depends(get_current_user)):
     try:
-        cached_user = await cache_get(cache_key, redis_client)
-        if cached_user:
-            return UserSchema.model_validate(cached_user)
-
-        await cache_set(cache_key, user.model_dump(), 3600, redis_client)
-        return user
+        return UserSchema.model_validate(user.model_dump())
     except Exception:
         return user
 
