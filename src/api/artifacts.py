@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Request
 from src.conf.limiter import limiter
 from src.db.models.enums import ArtifactType
 from src.schemas.artifacts import (
@@ -13,13 +13,14 @@ from src.services.artifacts import ArtifactService, get_artifact_service
 router = APIRouter(prefix="/projects", tags=["artifacts"])
 
 
-@limiter.limit("5/minute")
 @router.post(
     "/{project_id}/requirements/{requirement_id}/artifacts/generate",
     response_model=list[ArtifactResponse],
     status_code=status.HTTP_200_OK,
 )
+@limiter.limit("5/minute")
 async def generate_artifacts(
+    request: Request,
     project_id: UUID,
     requirement_id: UUID,
     body: ArtifactGenerateRequest,
@@ -71,12 +72,13 @@ async def update_artifact(
     )
 
 
-@limiter.limit("5/minute")
 @router.post(
     "/{project_id}/requirements/{requirement_id}/artifacts/{artifact_type}/regenerate",
     response_model=ArtifactResponse,
 )
+@limiter.limit("5/minute")
 async def regenerate_artifact(
+    request: Request,
     project_id: UUID,
     requirement_id: UUID,
     artifact_type: ArtifactType,
