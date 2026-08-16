@@ -1,13 +1,14 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
-
+from src.conf.limiter import limiter
 from src.schemas.coverage import CoverageReportResponse
 from src.services.coverage import CoverageService, get_coverage_service
 
 router = APIRouter(prefix="/projects", tags=["coverage"])
 
 
+@limiter.limit("5/minute")
 @router.post(
     "/{project_id}/requirements/{requirement_id}/coverage",
     response_model=CoverageReportResponse,
