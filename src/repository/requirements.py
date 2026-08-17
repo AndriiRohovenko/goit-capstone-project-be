@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.db.models import Requirement
 from src.schemas.requirements import RequirementCreate, RequirementUpdate
@@ -34,7 +35,7 @@ class RequirementRepository:
             select(Requirement).filter(
                 Requirement.id == requirement_id,
                 Requirement.project_id == project_id,
-            )
+            ).options(selectinload(Requirement.group))
         )
         return result.scalar_one_or_none()
 

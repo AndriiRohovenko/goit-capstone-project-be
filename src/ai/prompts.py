@@ -7,7 +7,12 @@ from typing import TYPE_CHECKING
 from src.db.models.enums import ArtifactType, GenerationType
 
 if TYPE_CHECKING:
-    from src.db.models import GeneratedArtifact, ProjectContext, Requirement
+    from src.db.models import (
+        GeneratedArtifact,
+        ProjectContext,
+        Requirement,
+        RequirementGroup,
+    )
 
 REGENERATABLE_ARTIFACT_TYPES = {
     ArtifactType.REQUIREMENT_REVIEW,
@@ -31,10 +36,18 @@ SIBLING_CONTEXT_INSTRUCTION = (
     "duplicating scenarios that clearly belong to a sibling."
 )
 
+GROUP_CONTEXT_INSTRUCTION = (
+    "requirement_group is shared context for the current requirement. "
+    "Use it to understand the scope and terminology, but do not treat it "
+    "as the item being reviewed or scored. If it conflicts with the "
+    "requirement, prefer the requirement and call out the conflict."
+)
+
 COVERAGE_SIBLING_INSTRUCTION = (
     "Score coverage only against the current requirement and its artifacts. "
     "sibling_requirements are context only: if a gap appears owned by a "
-    "sibling, note that under recommendations without changing the score."
+    "sibling, note that under recommendations without changing the score. "
+    "requirement_group is also context only and must not affect the score."
 )
 
 QA_COVERAGE_GUIDANCE = (
@@ -65,6 +78,17 @@ def _sibling_payload(requirement: Requirement) -> dict:
     }
 
 
+def _group_payload(group: RequirementGroup | None) -> dict | None:
+    if group is None:
+        return None
+
+    payload = {"name": group.name}
+    description = group.description.strip() if group.description else None
+    if description:
+        payload["description"] = description
+    return payload
+
+
 def _context_payload(context: ProjectContext | None) -> dict | None:
     if context is None:
         return None
@@ -82,11 +106,13 @@ def _context_payload(context: ProjectContext | None) -> dict | None:
 def build_request_payload(
     requirement: Requirement,
     context: ProjectContext | None,
+    group: RequirementGroup | None = None,
     siblings: Sequence[Requirement] = (),
 ) -> dict:
     return {
         "requirement": _requirement_payload(requirement),
         "project_context": _context_payload(context),
+        "requirement_group": _group_payload(group),
         "sibling_requirements": [
             _sibling_payload(sibling) for sibling in siblings
         ],
@@ -95,8 +121,8 @@ def build_request_payload(
 
 def _user_message(payload: dict) -> str:
     return (
-        "Analyze the following requirement, project context, and any "
-        "sibling requirements in the same group. "
+        "Analyze the following requirement, project context, requirement "
+        "group, and any sibling requirements in the same group. "
         "Respond with JSON only.\n\n"
         f"{json.dumps(payload, default=str, indent=2)}"
     )
@@ -106,14 +132,16 @@ def build_prompts(
     generation_type: GenerationType,
     requirement: Requirement,
     context: ProjectContext | None,
+    group: RequirementGroup | None = None,
     siblings: Sequence[Requirement] = (),
 ) -> tuple[str, str]:
-    payload = build_request_payload(requirement, context, siblings)
+    payload = build_request_payload(requirement, context, group, siblings)
     user = _user_message(payload)
 
     if generation_type == GenerationType.REQUIREMENT_REVIEW:
         system = (
             "You are a senior QA analyst reviewing software requirements. "
+            f"{GROUP_CONTEXT_INSTRUCTION} "
             f"{SIBLING_CONTEXT_INSTRUCTION} "
             "Return a single JSON object with this shape:\n"
             "{\n"
@@ -133,6 +161,7 @@ def build_prompts(
     if generation_type == GenerationType.TEST_GENERATION:
         system = (
             "You are a senior QA engineer creating test design artifacts. "
+            f"{GROUP_CONTEXT_INSTRUCTION} "
             f"{SIBLING_CONTEXT_INSTRUCTION} "
             "Return a single JSON object with this shape:\n"
             "{\n"
@@ -165,6 +194,7 @@ def build_coverage_payload(
     requirement: Requirement,
     artifacts: list[GeneratedArtifact],
     context: ProjectContext | None,
+    group: RequirementGroup | None = None,
     siblings: Sequence[Requirement] = (),
 ) -> dict:
     return {
@@ -174,6 +204,7 @@ def build_coverage_payload(
         },
         "artifacts": [_artifact_payload(artifact) for artifact in artifacts],
         "project_context": _context_payload(context),
+        "requirement_group": _group_payload(group),
         "sibling_requirements": [
             _sibling_payload(sibling) for sibling in siblings
         ],
@@ -184,11 +215,10 @@ def build_coverage_prompts(
     requirement: Requirement,
     artifacts: list[GeneratedArtifact],
     context: ProjectContext | None,
+    group: RequirementGroup | None = None,
     siblings: Sequence[Requirement] = (),
 ) -> tuple[str, str]:
-    payload = build_coverage_payload(
-        requirement, artifacts, context, siblings
-    )
+    payload = build_coverage_payload(requirement, artifacts, context, group, siblings)
     user = (
         "Analyze how well the generated test design artifacts cover the "
         "requirement below (including acceptance criteria and business rules). "
@@ -203,6 +233,7 @@ def build_coverage_prompts(
         "software requirement based on its generated test artifacts. "
         "Compare the requirement against the provided artifacts "
         "(test_cases, checklist, negative_scenarios, edge_cases). "
+        f"{GROUP_CONTEXT_INSTRUCTION} "
         f"{COVERAGE_SIBLING_INSTRUCTION} "
         f"{QA_COVERAGE_GUIDANCE} "
         "Do not produce detailed covered-area or partial-area breakdowns. "
@@ -261,6 +292,7 @@ def build_regenerate_prompts(
     artifact_type: ArtifactType,
     requirement: Requirement,
     context: ProjectContext | None,
+    group: RequirementGroup | None = None,
     siblings: Sequence[Requirement] = (),
 ) -> tuple[str, str]:
     if artifact_type not in REGENERATABLE_ARTIFACT_TYPES:
@@ -271,10 +303,11 @@ def build_regenerate_prompts(
             GenerationType.REQUIREMENT_REVIEW,
             requirement,
             context,
+            group,
             siblings,
         )
 
-    payload = build_request_payload(requirement, context, siblings)
+    payload = build_request_payload(requirement, context, group, siblings)
     user = _user_message(payload)
 
     type_value = artifact_type.value
@@ -285,6 +318,7 @@ def build_regenerate_prompts(
     )
     system = (
         "You are a senior QA engineer creating a single test design artifact. "
+        f"{GROUP_CONTEXT_INSTRUCTION} "
         f"{SIBLING_CONTEXT_INSTRUCTION} "
         "Return a single JSON object with this shape:\n"
         "{\n"

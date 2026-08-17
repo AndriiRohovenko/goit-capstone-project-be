@@ -101,7 +101,11 @@ class ArtifactService:
         context = await self.context_repository.get_by_project_id(project_id)
         siblings = await self._sibling_requirements(project_id, requirement)
         system, user = build_prompts(
-            generation_type, requirement, context, siblings
+            generation_type,
+            requirement,
+            context,
+            requirement.group,
+            siblings,
         )
 
         try:
@@ -185,7 +189,11 @@ class ArtifactService:
         context = await self.context_repository.get_by_project_id(project_id)
         siblings = await self._sibling_requirements(project_id, requirement)
         system, user = build_regenerate_prompts(
-            artifact_type, requirement, context, siblings
+            artifact_type,
+            requirement,
+            context,
+            requirement.group,
+            siblings,
         )
 
         try:

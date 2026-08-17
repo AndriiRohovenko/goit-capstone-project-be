@@ -92,7 +92,11 @@ class CoverageService:
         context = await self.context_repository.get_by_project_id(project_id)
         siblings = await self._sibling_requirements(project_id, requirement)
         system, user = build_coverage_prompts(
-            requirement, test_artifacts, context, siblings
+            requirement,
+            test_artifacts,
+            context,
+            requirement.group,
+            siblings,
         )
 
         try:
