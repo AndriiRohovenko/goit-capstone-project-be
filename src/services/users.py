@@ -17,17 +17,17 @@ class UserService:
         self.hash = Hash()
 
     async def get_refresh_token(self, user: User):
-        user = await self.repo.get_by_id(user.id)
-        if not user:
+        existing = await self.repo.get_by_id(user.id)
+        if not existing:
             raise UserNotFoundError
-        return user.refresh_token
+        return existing.refresh_token
 
     async def update_refresh_token(self, user: User, refresh_token: str | None):
-        user = await self.repo.get_by_id(user.id)
-        if not user:
+        existing = await self.repo.get_by_id(user.id)
+        if not existing:
             raise UserNotFoundError
         try:
-            return await self.repo.update(user, {"refresh_token": refresh_token})
+            return await self.repo.update(existing, {"refresh_token": refresh_token})
         except Exception as e:
             raise ServerError(str(e)) from e
 
@@ -36,6 +36,8 @@ class UserService:
 
     async def get_user_by_email_verification_token(self, token: str):
         email = jwt.decode(token, key=SECRET_KEY, algorithms=[ALGORITHM]).get("sub")
+        if not email:
+            raise UserNotFoundError
         return await self.repo.get_by_email(email)
 
     async def create_user(self, data: UserCreate):
@@ -88,7 +90,10 @@ class UserService:
             raise ServerError(str(e)) from e
 
     async def update_avatar_url(self, email: str, url: str):
-        return await self.repo.update_avatar_url(email, url)
+        user = await self.repo.update_avatar_url(email, url)
+        if not user:
+            raise UserNotFoundError
+        return user
 
     async def reset_password(self, user: User, new_password: str):
         try:
