@@ -71,6 +71,8 @@ class UserRepository:
 
     async def update_avatar_url(self, email: str, url: str):
         user = await self.get_by_email(email)
+        if not user:
+            return None
         user.avatar = url
         await self.db.commit()
         await self.db.refresh(user)
